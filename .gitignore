@@ -1,0 +1,11 @@
+# Ignore everything at root level
+/*
+
+# But keep the src folder
+!src/
+
+# Keep .gitignore itself
+!.gitignore
+
+# Keep README if it exists
+!README.md
