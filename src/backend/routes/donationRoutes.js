@@ -1,4 +1,5 @@
 import express from "express";
+import crypto from 'crypto';
 import Cause from "../models/Cause.js";
 import User from "../models/User.js";
 import { protect } from "../middleware/auth.js";
@@ -122,24 +123,31 @@ router.post('/', async (req, res) => {
     }
 
     // In a real application, here you would integrate with a payment gateway
-    // For now, we'll simulate a successful payment
-    
+    // For now, we'll simulate a successful payment and generate a paymentId if not provided
+    const { paymentId, paymentMethod } = req.body;
+    const recordedPaymentId = paymentId || (crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'));
+    const recordedPaymentMethod = paymentMethod || 'manual';
+
     // Update cause with donation
     cause.currentAmount += amount;
     cause.donorCount += 1;
-    
+
     // Check if target is reached
     if (cause.currentAmount >= cause.targetAmount && cause.status === 'active') {
       cause.status = 'completed';
     }
-    
+
     await cause.save();
 
-    // Update user's donation history
+    // Update user's donation history - include payment details
     const user = await User.findById(req.user._id);
     user.donations.push({
       amount,
       cause: cause.name,
+      causeId: cause._id,
+      paymentId: recordedPaymentId,
+      paymentMethod: recordedPaymentMethod,
+      status: 'completed',
       date: new Date()
     });
     await user.save();
@@ -151,6 +159,9 @@ router.post('/', async (req, res) => {
         donation: {
           amount,
           cause: cause.name,
+          causeId: cause._id,
+          paymentId: recordedPaymentId,
+          paymentMethod: recordedPaymentMethod,
           date: new Date()
         },
         causeStatus: {
