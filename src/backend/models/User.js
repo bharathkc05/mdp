@@ -23,7 +23,14 @@ const userSchema = new mongoose.Schema({
     preferredCauses: [String]
   },
   resetToken: String,
-  resetTokenExpiry: Date
+  resetTokenExpiry: Date,
+  // Token blacklist for logout functionality
+  tokenBlacklist: [{ 
+    token: String, 
+    expiresAt: Date 
+  }],
+  // Track last activity for session timeout
+  lastActivity: { type: Date, default: Date.now }
 }, { timestamps: true });
 
 // Hash password before saving

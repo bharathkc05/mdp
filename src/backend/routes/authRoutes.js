@@ -265,6 +265,11 @@ router.post('/login', async (req, res) => {
 
     // If user is verified and password is correct, create login token
     const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    
+    // Update last activity timestamp on login
+    user.lastActivity = Date.now();
+    await user.save();
+    
     return res.json({ message: 'Login successful', token });
   } catch (err) {
     console.error(err);
@@ -286,6 +291,47 @@ router.get('/profile', protect, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Logout - Invalidate current token
+router.post('/logout', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const token = req.token;
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Decode token to get expiration time
+    const decoded = jwt.decode(token);
+    const expiresAt = new Date(decoded.exp * 1000);
+
+    // Add token to blacklist
+    if (!user.tokenBlacklist) {
+      user.tokenBlacklist = [];
+    }
+
+    user.tokenBlacklist.push({
+      token: token,
+      expiresAt: expiresAt
+    });
+
+    // Clean up expired tokens from blacklist to prevent bloat
+    user.tokenBlacklist = user.tokenBlacklist.filter(
+      item => item.expiresAt > Date.now()
+    );
+
+    await user.save();
+
+    res.json({ 
+      message: 'Logged out successfully',
+      success: true 
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ message: 'Error logging out' });
   }
 });
 
