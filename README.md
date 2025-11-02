@@ -115,3 +115,23 @@ This project is developed for educational purposes as part of the PES University
 **Institution:** PES University  
 **Academic Year:** 2025  
 **Semester:** 5th Sem
+
+## 🔔 Recent changes (added features)
+
+The backend donation flow was enhanced to better record and track donation events. Changes added in this update:
+
+- Donation submission endpoint improvements
+   - POST `/api/donate/` now accepts `causeId` and `amount` (required).
+   - Optional `paymentId` and `paymentMethod` can be provided; a `paymentId` will be generated when omitted.
+   - The endpoint validates cause status and end date before accepting donations.
+
+- Donation metadata recorded
+   - User donation entries now include `causeId` (reference), `paymentId`, `paymentMethod`, and `status` (pending/completed/failed) while keeping the human-readable `cause` name for backwards compatibility.
+
+- Cause updates
+   - A successful donation increments the cause's `currentAmount` and `donorCount` and updates the cause `status` to `completed` if the target is reached.
+
+- Backwards compatible storage
+   - Existing `donations` subdocuments on `User` remain usable; new payment fields were added in a compatible fashion.
+
+These changes prepare the backend for later integration with a real payment gateway and improved reporting/receipts.
