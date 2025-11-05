@@ -8,6 +8,7 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import donationRoutes from "./routes/donationRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 dotenv.config();
@@ -55,6 +56,7 @@ app.use((req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/donate", donationRoutes);
+app.use("/api/dashboard", dashboardRoutes); // Story 4.1: Backend Aggregation Dashboard
 
 // Error handling
 app.use(errorHandler);

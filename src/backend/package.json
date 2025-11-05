@@ -9,7 +9,8 @@
     "test-access": "node scripts/TC-Sec-Access-01.js",
     "test-auth": "node scripts/TC-Auth-Stories-1.1-1.3.js",
     "test-donate": "node scripts/TC-Donate-04.js",
-    "verify-story-2.3": "node scripts/verify-story-2.3.js"
+    "verify-story-2.3": "node scripts/verify-story-2.3.js",
+    "test-story-4.1": "node scripts/test-story-4.1-dashboard.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
