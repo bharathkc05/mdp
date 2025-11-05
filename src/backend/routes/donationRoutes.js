@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import Cause from "../models/Cause.js";
 import User from "../models/User.js";
 import { protect } from "../middleware/auth.js";
+import { donationRateLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
@@ -80,7 +81,8 @@ router.get('/causes/:id', async (req, res) => {
 // @desc    Make a donation to a cause with atomic transaction
 // @access  Authenticated users (donors)
 // @implements Story 2.3 (MDP-F-007) - Atomic Transaction Recording
-router.post('/', async (req, res) => {
+// Story 5.3: Rate Limited
+router.post('/', donationRateLimiter, async (req, res) => {
   // Start a session for transaction
   const session = await mongoose.startSession();
   
