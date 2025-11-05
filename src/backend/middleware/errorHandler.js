@@ -1,10 +1,15 @@
+import { logger } from '../utils/logger.js';
+
 export const errorHandler = (err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
-  
-  // Log error for debugging
-  console.error(` Error: ${err.message}`);
-  console.error(err.stack);
+
+  // Structured error logging
+  if (req && req.log) {
+    req.log.error({ err, message: err.message }, 'Unhandled error');
+  } else {
+    logger.error({ err, message: err.message }, 'Unhandled error');
+  }
 
   res.status(statusCode).json({
     success: false,

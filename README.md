@@ -135,3 +135,36 @@ The backend donation flow was enhanced to better record and track donation event
    - Existing `donations` subdocuments on `User` remain usable; new payment fields were added in a compatible fashion.
 
 These changes prepare the backend for later integration with a real payment gateway and improved reporting/receipts.
+
+## 🔧 Story 5.2 — Implemented Structured Logging
+
+As part of Story 5.2 we implemented structured, consistent logging across the backend service using Pino. This improves debuggability and enables easier ingestion into log management systems.
+
+What was added:
+
+- Added dependencies: `pino`, `pino-http` (configured in `src/backend/package.json`).
+- New logger utility: `src/backend/utils/logger.js` which exports a `logger` and `httpLogger` middleware.
+- The Express server (`src/backend/server.js`) now uses the structured HTTP logger middleware to attach `req.log` for request-scoped logs.
+- Replaced ad-hoc console statements with structured logs in:
+   - `src/backend/middleware/errorHandler.js`
+   - `src/backend/routes/authRoutes.js`
+   - `src/backend/utils/email.js`
+   - `src/backend/scripts/listUsers.js`
+
+How to use / test locally:
+
+1. From the backend folder, install new deps and start the server:
+
+```powershell
+cd src/backend
+npm install
+npm run dev
+```
+
+2. Observe JSON structured logs in the console. For prettier local output add `pino-pretty` or pipe the logs through a local pretty-printer.
+
+Commit & branch:
+
+- Changes were committed on a feature branch named `feature/Story-5.2-Implement Structured-Logging` and pushed to the main remote.
+
+If you want me to also add log forwarding (to e.g. Logstash/CloudWatch) or configure environment-specific formats (pretty vs json), I can add that as a follow-up.

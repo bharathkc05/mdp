@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import { httpLogger, logger } from "./utils/logger.js";
 import rateLimit from "express-rate-limit";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -37,7 +38,11 @@ app.use(limiter);
 
 // Parsing middleware
 app.use(express.json({ limit: '10kb' })); // Body parser with size limit
-app.use(morgan('dev')); // Logging
+
+// Structured HTTP request logging (pino)
+app.use(httpLogger);
+// Keep morgan for any simple dev output if desired (optional)
+// app.use(morgan('dev'));
 
 // Database connection
 connectDB();
@@ -46,7 +51,9 @@ connectDB();
 app.use((req, res, next) => {
   if (req.url.includes('/api/auth/api/auth')) {
     req.url = req.url.replace('/api/auth/api/auth', '/api/auth');
-    console.log('Normalized URL to:', req.url);
+    // use request-scoped logger when available
+    if (req.log) req.log.info({ normalizedUrl: req.url }, 'Normalized URL');
+    else logger.info({ normalizedUrl: req.url }, 'Normalized URL');
   }
   next();
 });
@@ -65,4 +72,4 @@ app.get('/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`🚀 Backend running on port ${PORT}`));
+app.listen(PORT, () => logger.info({ port: PORT }, '🚀 Backend running'));
