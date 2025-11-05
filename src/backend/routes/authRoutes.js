@@ -5,6 +5,7 @@ import User from "../models/User.js";
 import { sendVerificationEmail } from "../utils/email.js";
 import { protect } from "../middleware/auth.js";
 import { sendPasswordResetEmail } from "../utils/email.js";
+import { logger } from "../utils/logger.js";
 
 const router = express.Router();
 
@@ -42,13 +43,15 @@ router.post('/forgot-password', async (req, res) => {
         previewUrl: emailResult.previewUrl
       });
     } catch (emailError) {
-      console.error('Error sending password reset email:', emailError);
+      if (req?.log) req.log.error({ err: emailError }, 'Error sending password reset email');
+      else logger.error({ err: emailError }, 'Error sending password reset email');
       return res.status(500).json({ 
         message: 'Error sending password reset email. Please try again later.'
       });
     }
   } catch (error) {
-    console.error('Error in forgot password:', error);
+    if (req?.log) req.log.error({ err: error }, 'Error in forgot password');
+    else logger.error({ err: error }, 'Error in forgot password');
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -87,7 +90,8 @@ router.post('/reset-password', async (req, res) => {
 
     res.json({ message: 'Password successfully reset. You can now login with your new password.' });
   } catch (error) {
-    console.error('Error in reset password:', error);
+    if (req?.log) req.log.error({ err: error }, 'Error in reset password');
+    else logger.error({ err: error }, 'Error in reset password');
     res.status(500).json({ message: 'Error resetting password' });
   }
 });
@@ -122,14 +126,16 @@ router.post('/resend-verification', async (req, res) => {
         previewUrl: emailResult.previewUrl
       });
     } catch (emailError) {
-      console.error('Error sending verification email:', emailError);
+      if (req?.log) req.log.error({ err: emailError }, 'Error sending verification email');
+      else logger.error({ err: emailError }, 'Error sending verification email');
       return res.status(500).json({ 
         message: 'Error sending verification email, but registration was successful. Use the token below to verify manually.',
         token
       });
     }
   } catch (error) {
-    console.error('Error in resend verification:', error);
+    if (req?.log) req.log.error({ err: error }, 'Error in resend verification');
+    else logger.error({ err: error }, 'Error in resend verification');
     res.status(500).json({ message: 'Error resending verification email' });
   }
 });
@@ -169,27 +175,31 @@ router.post('/register', async (req, res) => {
     const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     // send verification email
-    try {
-      console.log('Attempting to send verification email...');
-      const emailResult = await sendVerificationEmail(user.email, token);
-      console.log('Email sent successfully:', emailResult);
-      return res.json({ 
-        message: 'Registration successful! Please check your email to verify your account.', 
-        previewUrl: emailResult.previewUrl,
-        verificationToken: emailResult.token,
-        verificationLink: emailResult.link
-      });
-    } catch (err) {
-      console.error('Failed to send verification email:', err);
-      // Since user is created but email failed, provide token for manual verification
-      return res.json({ 
-        message: 'Registered successfully but failed to send verification email.', 
-        verificationToken: token,
-        error: err.message 
-      });
-    }
+      try {
+        if (req?.log) req.log.info('Attempting to send verification email');
+        else logger.info('Attempting to send verification email');
+        const emailResult = await sendVerificationEmail(user.email, token);
+        if (req?.log) req.log.info({ result: emailResult }, 'Email sent successfully');
+        else logger.info({ result: emailResult }, 'Email sent successfully');
+        return res.json({ 
+          message: 'Registration successful! Please check your email to verify your account.', 
+          previewUrl: emailResult.previewUrl,
+          verificationToken: emailResult.token,
+          verificationLink: emailResult.link
+        });
+      } catch (err) {
+        if (req?.log) req.log.error({ err }, 'Failed to send verification email');
+        else logger.error({ err }, 'Failed to send verification email');
+        // Since user is created but email failed, provide token for manual verification
+        return res.json({ 
+          message: 'Registered successfully but failed to send verification email.', 
+          verificationToken: token,
+          error: err.message 
+        });
+      }
   } catch (err) {
-    console.error(err);
+    if (req?.log) req.log.error({ err }, 'Registration error');
+    else logger.error({ err }, 'Registration error');
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -197,7 +207,8 @@ router.post('/register', async (req, res) => {
 // Verify endpoint (accepts token via query or param)
 router.get('/verify', async (req, res) => {
   try {
-    console.log('Verifying email with token:', req.query.token);
+  if (req?.log) req.log.info({ token: req.query.token }, 'Verifying email with token');
+  else logger.info({ token: req.query.token }, 'Verifying email with token');
     const token = req.query.token || req.params.token;
     if (!token) return res.status(400).json({ message: 'Token required' });
     

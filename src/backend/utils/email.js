@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { logger } from './logger.js';
 
 async function createTransporter() {
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -118,7 +119,7 @@ export async function sendVerificationEmail(toEmail, token) {
 
   const info = await transporter.sendMail(mailOptions);
   const previewUrl = nodemailer.getTestMessageUrl(info) || null;
-  console.log('Verification email preview URL:', previewUrl);
+  logger.info({ previewUrl, to: toEmail }, 'Verification email sent (preview URL)');
 
   return { info, previewUrl, link, token };
 }
