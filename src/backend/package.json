@@ -15,6 +15,7 @@
     "test-story-4.1": "node scripts/test-story-4.1-dashboard.js",
     "test-story-5.1": "node scripts/test-story-5.1-https.js",
     "test-story-5.3": "node scripts/test-story-5.3-rate-limiting.js",
+    "test-story-5.4": "node scripts/test-story-5.4-error-handling.js",
     "generate-ssl": "powershell -ExecutionPolicy Bypass -File ./generate-ssl-cert.ps1"
   },
   "dependencies": {

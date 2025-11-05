@@ -9,7 +9,12 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import donationRoutes from "./routes/donationRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
-import { errorHandler } from "./middleware/errorHandler.js";
+import { 
+  errorHandler, 
+  notFoundHandler,
+  handleUnhandledRejection,
+  handleUncaughtException 
+} from "./middleware/errorHandler.js";
 import { 
   enforceHTTPS, 
   setHSTSHeaders, 
@@ -18,6 +23,10 @@ import {
 import { generalRateLimiter } from "./middleware/rateLimiter.js";
 
 dotenv.config();
+
+// Story 5.4: Handle uncaught exceptions and unhandled rejections
+handleUncaughtException();
+handleUnhandledRejection();
 
 const app = express();
 
@@ -72,13 +81,16 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/donate", donationRoutes);
 app.use("/api/dashboard", dashboardRoutes); // Story 4.1: Backend Aggregation Dashboard
 
-// Error handling
-app.use(errorHandler);
-
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
 });
+
+// Story 5.4: 404 handler for undefined routes
+app.use(notFoundHandler);
+
+// Story 5.4: Global error handling middleware (must be last)
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => logger.info({ port: PORT }, '🚀 Backend running'));
