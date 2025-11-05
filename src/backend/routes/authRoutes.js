@@ -6,11 +6,16 @@ import { sendVerificationEmail } from "../utils/email.js";
 import { protect } from "../middleware/auth.js";
 import { sendPasswordResetEmail } from "../utils/email.js";
 import { logger } from "../utils/logger.js";
+import { 
+  loginRateLimiter, 
+  passwordResetRateLimiter, 
+  registrationRateLimiter 
+} from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
-// Request password reset
-router.post('/forgot-password', async (req, res) => {
+// Request password reset - Story 5.3: Rate Limited
+router.post('/forgot-password', passwordResetRateLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     
@@ -56,8 +61,8 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// Reset password with token
-router.post('/reset-password', async (req, res) => {
+// Reset password with token - Story 5.3: Rate Limited
+router.post('/reset-password', passwordResetRateLimiter, async (req, res) => {
   try {
     const { token, newPassword } = req.body;
     
@@ -140,8 +145,8 @@ router.post('/resend-verification', async (req, res) => {
   }
 });
 
-// Register route
-router.post('/register', async (req, res) => {
+// Register route - Story 5.3: Rate Limited
+router.post('/register', registrationRateLimiter, async (req, res) => {
   try {
     const { firstName, lastName, age, gender, email, password, confirmPassword } = req.body;
 
@@ -239,8 +244,8 @@ router.get('/verify/:token', async (req, res) => {
   return router.handle(req, res);
 });
 
-// Login
-router.post('/login', async (req, res) => {
+// Login - Story 5.3: Rate Limited
+router.post('/login', loginRateLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
