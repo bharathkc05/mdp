@@ -9,10 +9,21 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import donationRoutes from "./routes/donationRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { 
+  enforceHTTPS, 
+  setHSTSHeaders, 
+  setSecurityHeaders 
+} from "./middleware/httpsEnforcer.js";
 
 dotenv.config();
 
 const app = express();
+
+// Story 5.1: Enforce HTTPS and Secure Transport
+// Apply HTTPS enforcement first (before other middleware)
+app.use(enforceHTTPS);
+app.use(setHSTSHeaders);
+app.use(setSecurityHeaders);
 
 // Security Middleware
 app.use(helmet());
