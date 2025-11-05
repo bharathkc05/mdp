@@ -1,0 +1,34 @@
+# Ignore everything at root level
+/*
+
+# But keep these important folders/files
+!src/
+!docs/
+!.gitignore
+!README.md
+!.github/
+
+# Environment files (sensitive)
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# SSL Certificates (Story 5.1 - never commit these!)
+*.key
+*.crt
+*.csr
+*.pem
+*.p12
+*.pfx
+ssl/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db

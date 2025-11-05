@@ -1,0 +1,87 @@
+# Dependencies
+node_modules/
+**/node_modules/
+package-lock.json
+
+# Environment variables (SENSITIVE - never commit!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+**/.env
+**/.env.*
+
+# SSL Certificates (Story 5.1 - SECURITY SENSITIVE!)
+ssl/
+**/ssl/
+*.key
+*.crt
+*.csr
+*.pem
+*.p12
+*.pfx
+*.cer
+*.der
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+out/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+tmp_reg.json
+*.bak
+
+# Coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Testing
+.jest/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
