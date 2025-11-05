@@ -4,7 +4,6 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import { httpLogger, logger } from "./utils/logger.js";
-import rateLimit from "express-rate-limit";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
@@ -21,6 +20,7 @@ import {
   setHSTSHeaders, 
   setSecurityHeaders 
 } from "./middleware/httpsEnforcer.js";
+import { generalRateLimiter } from "./middleware/rateLimiter.js";
 
 dotenv.config();
 
@@ -50,12 +50,8 @@ app.use(
   })
 );
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
+// Rate limiting - Story 5.3: General API rate limiting
+app.use(generalRateLimiter);
 
 // Parsing middleware
 app.use(express.json({ limit: '10kb' })); // Body parser with size limit
