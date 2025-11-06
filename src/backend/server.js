@@ -9,6 +9,7 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import donationRoutes from "./routes/donationRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import healthRoutes from "./routes/healthRoutes.js";
 import { 
   errorHandler, 
   notFoundHandler,
@@ -81,10 +82,8 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/donate", donationRoutes);
 app.use("/api/dashboard", dashboardRoutes); // Story 4.1: Backend Aggregation Dashboard
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy' });
-});
+// Story 5.5: System Health Check Endpoint (public endpoint, no authentication required)
+app.use("/health", healthRoutes);
 
 // Story 5.4: 404 handler for undefined routes
 app.use(notFoundHandler);
