@@ -37,7 +37,14 @@ const userSchema = new mongoose.Schema({
     expiresAt: Date 
   }],
   // Track last activity for session timeout
-  lastActivity: { type: Date, default: Date.now }
+  lastActivity: { type: Date, default: Date.now },
+  // Two-Factor Authentication fields
+  twoFactorSecret: { type: String },
+  twoFactorEnabled: { type: Boolean, default: false },
+  backupCodes: [{ 
+    code: String, 
+    used: { type: Boolean, default: false } 
+  }]
 }, { timestamps: true });
 
 // Hash password before saving

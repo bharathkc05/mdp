@@ -10,6 +10,9 @@ export default function Login() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [useBackupCode, setUseBackupCode] = useState(false);
   const navigate = useNavigate();
 
   const validate = () => {
@@ -61,13 +64,43 @@ export default function Login() {
     
     setLoading(true);
     try {
-      const { data } = await API.post("/auth/login", form);
+      const loginData = { ...form };
+      
+      // If 2FA is required, include the code
+      if (requiresTwoFactor) {
+        if (useBackupCode) {
+          loginData.backupCode = twoFactorCode;
+        } else {
+          loginData.twoFactorCode = twoFactorCode;
+        }
+      }
+      
+      const { data } = await API.post("/auth/login", loginData);
+      
+      // Check if 2FA is required
+      if (data.requiresTwoFactor) {
+        setRequiresTwoFactor(true);
+        setMessage(data.message || 'Please enter your 2FA code');
+        setLoading(false);
+        return;
+      }
+      
+      // Successful login
       localStorage.setItem("token", data.token);
       localStorage.setItem("email", form.email);
+      if (data.role) {
+        localStorage.setItem("role", data.role);
+      }
       setMessage('Successfully logged in');
       setTimeout(() => navigate('/dashboard'), 1500);
     } catch (err) {
       setMessage(err.response?.data?.message || "Login failed");
+      // If 2FA code was wrong, keep the 2FA form visible
+      if (requiresTwoFactor && err.response?.data?.message?.includes('2FA')) {
+        setTwoFactorCode('');
+      } else {
+        setRequiresTwoFactor(false);
+      }
     } finally {
       setLoading(false);
     }
@@ -147,6 +180,43 @@ export default function Login() {
                 </p>
               )}
             </div>
+
+            {/* Two-Factor Authentication Code Input */}
+            {requiresTwoFactor && (
+              <div className="border-t pt-4">
+                <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-sm text-blue-800">
+                    🔐 Two-factor authentication is enabled for this account
+                  </p>
+                </div>
+                
+                <label htmlFor="twoFactorCode" className="block text-sm font-medium text-gray-700 mb-1">
+                  {useBackupCode ? 'Backup Code' : '2FA Code'} <span className="text-red-600" aria-label="required">*</span>
+                </label>
+                <input
+                  id="twoFactorCode"
+                  type="text"
+                  placeholder={useBackupCode ? "Enter backup code" : "Enter 6-digit code"}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value)}
+                  maxLength={useBackupCode ? 16 : 6}
+                  required
+                  aria-required="true"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseBackupCode(!useBackupCode);
+                    setTwoFactorCode('');
+                  }}
+                  className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline focus:outline-none"
+                >
+                  {useBackupCode ? 'Use authenticator code instead' : 'Use backup code'}
+                </button>
+              </div>
+            )}
 
             <div className="flex items-center justify-between">
               <a

@@ -1,6 +1,7 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import speakeasy from "speakeasy";
 import User from "../models/User.js";
 import { sendVerificationEmail } from "../utils/email.js";
 import { protect } from "../middleware/auth.js";
@@ -11,6 +12,7 @@ import {
   passwordResetRateLimiter, 
   registrationRateLimiter 
 } from "../middleware/rateLimiter.js";
+import { verifyBackupCode } from "./twoFactorRoutes.js";
 
 const router = express.Router();
 
@@ -245,9 +247,10 @@ router.get('/verify/:token', async (req, res) => {
 });
 
 // Login - Story 5.3: Rate Limited
+// Updated for Story 1.5: Two-Factor Authentication
 router.post('/login', loginRateLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, twoFactorCode, backupCode } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
     
     const user = await User.findOne({ email });
@@ -279,14 +282,53 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       }
     }
 
-    // If user is verified and password is correct, create login token
+    // Story 1.5: Check if 2FA is enabled for admin users
+    if (user.role === 'admin' && user.twoFactorEnabled) {
+      // If 2FA is enabled but no code provided, prompt for 2FA
+      if (!twoFactorCode && !backupCode) {
+        return res.status(200).json({ 
+          requiresTwoFactor: true,
+          message: 'Please enter your 2FA code',
+          userId: user._id // Will be used to verify 2FA code
+        });
+      }
+
+      // Verify 2FA code or backup code
+      let twoFactorValid = false;
+
+      if (backupCode) {
+        // Verify backup code
+        twoFactorValid = await verifyBackupCode(user._id, backupCode);
+        if (!twoFactorValid) {
+          return res.status(401).json({ message: 'Invalid or already used backup code' });
+        }
+      } else if (twoFactorCode) {
+        // Verify TOTP code
+        twoFactorValid = speakeasy.totp.verify({
+          secret: user.twoFactorSecret,
+          encoding: 'base32',
+          token: twoFactorCode,
+          window: 2 // Allow 2 time steps for clock skew
+        });
+
+        if (!twoFactorValid) {
+          return res.status(401).json({ message: 'Invalid 2FA code' });
+        }
+      }
+
+      if (!twoFactorValid) {
+        return res.status(401).json({ message: 'Invalid 2FA authentication' });
+      }
+    }
+
+    // If user is verified and password is correct (and 2FA passed if required), create login token
     const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
     
     // Update last activity timestamp on login
     user.lastActivity = Date.now();
     await user.save();
     
-    return res.json({ message: 'Login successful', token });
+    return res.json({ message: 'Login successful', token, role: user.role });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
