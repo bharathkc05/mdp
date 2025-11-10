@@ -40,8 +40,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        cache-dependency-path: src/backend/package-lock.json
     
     - name: Install backend dependencies
       run: |
@@ -70,17 +68,34 @@ jobs:
       run: |
         timeout 30 bash -c 'until nc -z localhost 27017; do sleep 1; done'
     
-    - name: Run backend tests
+    - name: Start backend server
       run: |
         cd src/backend
         npm start &
-        sleep 5
-        npm run test-auth || true
-        npm run test-donate || true
-        npm run verify-story-2.3 || true
-        npm run test-story-4.1 || true
-        npm run test-story-5.4 || true
-        npm run test-story-5.5 || true
+        echo $! > server.pid
+    
+    - name: Wait for server to be ready
+      run: |
+        timeout 30 bash -c 'until nc -z localhost 5000; do sleep 1; done' || echo "Server may not be ready"
+        sleep 2
+    
+    - name: Run backend tests
+      run: |
+        cd src/backend
+        npm run test-auth
+        npm run test-donate
+        npm run verify-story-2.3
+        npm run test-story-4.1
+        npm run test-story-5.4
+        npm run test-story-5.5
+    
+    - name: Stop backend server
+      if: always()
+      run: |
+        cd src/backend
+        if [ -f server.pid ]; then
+          kill $(cat server.pid) || true
+        fi
       env:
         MONGODB_URI: mongodb://localhost:27017/mdp_test
         JWT_SECRET: test_jwt_secret_key_for_ci
@@ -108,8 +123,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
-        cache-dependency-path: src/backend/package-lock.json
     
     - name: Install dependencies
       run: |
@@ -170,8 +183,10 @@ jobs:
       run: |
         echo "Checking for exposed secrets..."
         if grep -r "password\s*=\s*['\"].*['\"]" --include="*.js" --exclude-dir=node_modules .; then
-          echo "Warning: Potential hardcoded passwords found"
+          echo "Error: Potential hardcoded passwords found"
+          exit 1
         fi
+        echo "No hardcoded secrets detected"
 
   build-check:
     name: Build Check
