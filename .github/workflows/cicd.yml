@@ -41,13 +41,11 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        cache-dependency-path: src/backend/package-lock.json
     
     - name: Install backend dependencies
       run: |
         cd src/backend
-        npm ci
+        npm install
     
     - name: Create test environment
       run: |
@@ -214,13 +212,11 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
-        cache-dependency-path: src/frontend/package-lock.json
     
     - name: Install frontend dependencies
       run: |
         cd src/frontend
-        npm ci
+        npm install
     
     - name: Build frontend
       run: |
