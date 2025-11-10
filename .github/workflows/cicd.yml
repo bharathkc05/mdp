@@ -51,7 +51,7 @@ jobs:
         cd src/backend
         cat > .env << EOF
         NODE_ENV=test
-        PORT=5000
+        PORT=3000
         MONGODB_URI=mongodb://localhost:27017/mdp_test
         JWT_SECRET=test_jwt_secret_key_for_ci
         JWT_EXPIRE=24h
@@ -73,11 +73,15 @@ jobs:
         cd src/backend
         npm start &
         echo $! > server.pid
+      env:
+        PORT: 3000
+        MONGODB_URI: mongodb://localhost:27017/mdp_test
+        JWT_SECRET: test_jwt_secret_key_for_ci
     
     - name: Wait for server to be ready
       run: |
-        timeout 30 bash -c 'until nc -z localhost 5000; do sleep 1; done' || echo "Server may not be ready"
-        sleep 2
+        timeout 30 bash -c 'until nc -z localhost 3000; do sleep 1; done'
+        echo "Server is ready on port 3000"
     
     - name: Run backend tests
       run: |
