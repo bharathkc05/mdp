@@ -29,6 +29,9 @@ export default function Navbar() {
       <div className="space-x-4">
         <Link to="/" className="hover:underline">Home</Link>
         <Link to="/causes" className="hover:underline">Browse Causes</Link>
+        {isAuthenticated && (
+          <Link to="/donate/multi" className="hover:underline">Multi-Cause Donate</Link>
+        )}
         {isAuthenticated ? (
           <>
             <span className="text-sm">Welcome, {email}</span>
