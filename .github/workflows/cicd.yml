@@ -69,8 +69,28 @@ jobs:
     - name: Wait for MongoDB to be ready
       run: |
         echo "Waiting for MongoDB..."
-        timeout 60 bash -c 'until mongosh --eval "db.runCommand({ ping: 1 })" --quiet; do sleep 2; done'
-        echo "MongoDB is ready"
+        cd src/backend
+        node -e "
+        const mongoose = require('mongoose');
+        async function checkMongo() {
+          for (let i = 0; i < 30; i++) {
+            try {
+              await mongoose.connect('mongodb://localhost:27017/mdp_test', { 
+                serverSelectionTimeoutMS: 2000 
+              });
+              console.log('MongoDB is ready');
+              await mongoose.disconnect();
+              process.exit(0);
+            } catch (err) {
+              console.log('Waiting for MongoDB... attempt', i + 1);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          }
+          console.error('MongoDB failed to start');
+          process.exit(1);
+        }
+        checkMongo();
+        "
     
     - name: Start backend server
       run: |
