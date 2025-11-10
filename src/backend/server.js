@@ -10,6 +10,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import donationRoutes from "./routes/donationRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import healthRoutes from "./routes/healthRoutes.js";
+import causeRoutes from "./routes/causeRoutes.js";
 import { 
   errorHandler, 
   notFoundHandler,
@@ -79,6 +80,7 @@ app.use((req, res, next) => {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/causes", causeRoutes); // Story 2.1: Browse, Search, and Filter Causes
 app.use("/api/donate", donationRoutes);
 app.use("/api/dashboard", dashboardRoutes); // Story 4.1: Backend Aggregation Dashboard
 
