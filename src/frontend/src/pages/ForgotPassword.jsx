@@ -6,6 +6,7 @@ export default function ForgotPassword() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [fieldError, setFieldError] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
 
   const validate = () => {
     if (!email) {
@@ -23,6 +24,7 @@ export default function ForgotPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
+    setPreviewUrl("");
     
     if (!validate()) {
       return;
@@ -33,7 +35,7 @@ export default function ForgotPassword() {
       const { data } = await API.post("/auth/forgot-password", { email });
       setMessage(data.message);
       if (data.previewUrl) {
-        window.open(data.previewUrl, '_blank');
+        setPreviewUrl(data.previewUrl);
       }
     } catch (err) {
       setMessage(err.response?.data?.message || "Failed to send reset instructions");
@@ -98,6 +100,22 @@ export default function ForgotPassword() {
               <p className={`text-center text-sm ${message.includes("sent") || message.includes("success") ? 'text-green-600' : 'text-red-600'}`}>
                 {message}
               </p>
+              {previewUrl && (
+                <div className="mt-3 text-center">
+                  <a 
+                    href={previewUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 underline font-medium"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Open Email Preview (Ethereal Mail)
+                  </a>
+                  <p className="text-xs text-gray-500 mt-1">Click to view the reset email in your browser</p>
+                </div>
+              )}
             </div>
           )}
 
