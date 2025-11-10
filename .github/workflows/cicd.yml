@@ -52,7 +52,7 @@ jobs:
         cat > .env << EOF
         NODE_ENV=test
         PORT=3000
-        MONGODB_URI=mongodb://localhost:27017/mdp_test
+        MONGO_URI=mongodb://localhost:27017/mdp_test
         JWT_SECRET=test_jwt_secret_key_for_ci
         JWT_EXPIRE=24h
         EMAIL_HOST=smtp.example.com
@@ -83,7 +83,7 @@ jobs:
         fi
       env:
         PORT: 3000
-        MONGODB_URI: mongodb://localhost:27017/mdp_test
+        MONGO_URI: mongodb://localhost:27017/mdp_test
         JWT_SECRET: test_jwt_secret_key_for_ci
     
     - name: Wait for server to be ready
@@ -120,9 +120,6 @@ jobs:
         if [ -f server.pid ]; then
           kill $(cat server.pid) || true
         fi
-      env:
-        MONGODB_URI: mongodb://localhost:27017/mdp_test
-        JWT_SECRET: test_jwt_secret_key_for_ci
     
     - name: Check for code quality issues
       run: |
