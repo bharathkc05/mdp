@@ -1,4 +1,4 @@
-name: MDP CI/CD Pipeline
+﻿name: MDP CI/CD Pipeline
 
 on:
   push:
@@ -69,7 +69,7 @@ jobs:
       run: |
         echo "Waiting for MongoDB..."
         timeout 60 bash -c 'until mongosh --eval "db.runCommand({ ping: 1 })" --quiet; do sleep 2; done'
-        echo "✅ MongoDB is ready"
+        echo "MongoDB is ready"
     
     - name: Start backend server
       run: |
@@ -78,9 +78,9 @@ jobs:
         echo $! > server.pid
         sleep 5
         if ps -p $(cat server.pid) > /dev/null; then
-          echo "✅ Server started successfully (PID: $(cat server.pid))"
+          echo "Server started successfully (PID: $(cat server.pid))"
         else
-          echo "❌ Server failed to start"
+          echo "Server failed to start"
           cat server.log
           exit 1
         fi
@@ -92,79 +92,79 @@ jobs:
     
     - name: Wait for server to be ready
       run: |
-        echo "⏳ Waiting for server on port 3000..."
+        echo "Waiting for server on port 3000..."
         for i in {1..30}; do
           if nc -z localhost 3000 2>/dev/null; then
-            echo "✅ Server is responding on port 3000"
+            echo "Server is responding on port 3000"
             curl -f http://localhost:3000/health || true
             exit 0
           fi
           echo "Attempt $i/30: Server not ready yet..."
           sleep 2
         done
-        echo "❌ Server failed to become ready within timeout"
+        echo "Server failed to become ready within timeout"
         echo "=== Server logs ==="
         cat src/backend/server.log || echo "No server log found"
         exit 1
     
-    - name: Setup test data (Epic 1: Authentication)
+    - name: Setup test data (Epic 1 - Authentication)
       run: |
         cd src/backend
-        echo "📝 Setting up test users..."
-        npm run setup-test-users || echo "⚠️ Test user setup may fail on fresh DB"
+        echo "Setting up test users..."
+        npm run setup-test-users || echo "Test user setup may fail on fresh DB"
       continue-on-error: true
     
     - name: Run Epic 1 Tests - User Authentication
       run: |
         cd src/backend
-        echo "🧪 Testing Story 1.1-1.3: Registration, Login, Password Reset..."
+        echo "Testing Story 1.1-1.3: Registration, Login, Password Reset..."
         npm run test-auth
-        echo "✅ Authentication tests passed"
+        echo "Authentication tests passed"
     
     - name: Run Epic 1 Tests - RBAC
       run: |
         cd src/backend
-        echo "🧪 Testing Story 1.4: Role-Based Access Control..."
+        echo "Testing Story 1.4: Role-Based Access Control..."
         npm run test-access
-        echo "✅ RBAC tests passed"
+        echo "RBAC tests passed"
     
     - name: Run Epic 2 Tests - Donation Flow
       run: |
         cd src/backend
-        echo "🧪 Testing Story 2.3: Atomic Transaction Recording..."
-        npm run test-donate || echo "⚠️ Donation tests require pre-existing users"
-        npm run verify-story-2.3 || echo "⚠️ Verification requires existing setup"
+        echo "Testing Story 2.3: Atomic Transaction Recording..."
+        npm run test-donate || echo "Donation tests require pre-existing users"
+        npm run verify-story-2.3 || echo "Verification requires existing setup"
       continue-on-error: true
     
     - name: Run Epic 4 Tests - Analytics Dashboard
       run: |
         cd src/backend
-        echo "🧪 Testing Story 4.1: Admin Analytics Dashboard..."
-        npm run test-story-4.1 || echo "⚠️ Dashboard tests require existing data"
+        echo "Testing Story 4.1: Admin Analytics Dashboard..."
+        npm run test-story-4.1 || echo "Dashboard tests require existing data"
       continue-on-error: true
     
     - name: Run Epic 5 Tests - System Foundation
       run: |
         cd src/backend
-        echo "🧪 Testing Story 5.3: Rate Limiting..."
+        echo "Testing Story 5.3: Rate Limiting..."
         npm run test-story-5.3
-        echo "🧪 Testing Story 5.4: Error Handling..."
+        echo "Testing Story 5.4: Error Handling..."
         npm run test-story-5.4
-        echo "🧪 Testing Story 5.5: Health Check..."
+        echo "Testing Story 5.5: Health Check..."
         npm run test-story-5.5
-        echo "✅ System foundation tests passed"
+        echo "System foundation tests passed"
     
     - name: Generate test report
       if: always()
       run: |
         cd src/backend
-        echo "## 🧪 Backend Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "## Backend Test Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Test Coverage by Epic" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Epic 1: User Authentication & Access Control" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Epic 2: Core Donation Experience (Partial)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Epic 4: Data Analytics (Partial)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Epic 5: System Foundation & Operational Readiness" >> $GITHUB_STEP_SUMMARY
+        echo "- Epic 1: User Authentication & Access Control" >> $GITHUB_STEP_SUMMARY
+        echo "- Epic 2: Core Donation Experience (Partial)" >> $GITHUB_STEP_SUMMARY
+        echo "- Epic 4: Data Analytics (Partial)" >> $GITHUB_STEP_SUMMARY
+        echo "- Epic 5: System Foundation & Operational Readiness" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Test Environment" >> $GITHUB_STEP_SUMMARY
         echo "- Node Version: ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY
@@ -176,10 +176,10 @@ jobs:
       run: |
         cd src/backend
         if [ -f server.pid ]; then
-          echo "🛑 Stopping server (PID: $(cat server.pid))..."
+          echo "Stopping server (PID: $(cat server.pid))..."
           kill $(cat server.pid) 2>/dev/null || true
           sleep 2
-          echo "✅ Server stopped"
+          echo "Server stopped"
         fi
     
     - name: Upload server logs
@@ -193,11 +193,11 @@ jobs:
     - name: Syntax validation
       run: |
         cd src/backend
-        echo "🔍 Validating JavaScript syntax..."
+        echo "Validating JavaScript syntax..."
         node -c server.js
         node -c server-https.js
         find . -name "*.js" -not -path "./node_modules/*" -exec node -c {} \;
-        echo "✅ All JavaScript files are syntactically valid"
+        echo "All JavaScript files are syntactically valid"
 
   test-frontend:
     name: Frontend Build & Tests
@@ -221,33 +221,33 @@ jobs:
     - name: Build frontend
       run: |
         cd src/frontend
-        echo "🏗️ Building frontend for production..."
+        echo " Building frontend for production..."
         npm run build
-        echo "✅ Frontend build successful"
+        echo " Frontend build successful"
     
     - name: Check build output
       run: |
         cd src/frontend
         if [ -d "dist" ]; then
-          echo "✅ Build directory created"
-          echo "📦 Build artifacts:"
+          echo " Build directory created"
+          echo " Build artifacts:"
           ls -lh dist/
         else
-          echo "❌ Build directory not found"
+          echo " Build directory not found"
           exit 1
         fi
     
     - name: Validate React components
       run: |
         cd src/frontend/src
-        echo "🔍 Checking React component structure..."
+        echo " Checking React component structure..."
         echo "Components found: $(find . -name '*.jsx' | wc -l)"
         echo "Pages found: $(find pages -name '*.jsx' 2>/dev/null | wc -l || echo 0)"
     
     - name: Check for WCAG compliance indicators
       run: |
         cd src/frontend/src
-        echo "♿ Checking accessibility patterns..."
+        echo " Checking accessibility patterns..."
         echo "ARIA labels: $(grep -r "aria-label" --include="*.jsx" . | wc -l)"
         echo "Alt attributes: $(grep -r "alt=" --include="*.jsx" . | wc -l)"
         echo "Role attributes: $(grep -r "role=" --include="*.jsx" . | wc -l)"
@@ -261,12 +261,12 @@ jobs:
     
     - name: Frontend test summary
       run: |
-        echo "## 🎨 Frontend Build Results" >> $GITHUB_STEP_SUMMARY
+        echo "##  Frontend Build Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Stories Implemented" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Story 1.6: Frontend User Authentication UI" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Story 2.1: Browse, Search, and Filter Causes" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Story 2.4: Frontend UI for Multi-Cause Donation" >> $GITHUB_STEP_SUMMARY
+        echo "-  Story 1.6: Frontend User Authentication UI" >> $GITHUB_STEP_SUMMARY
+        echo "-  Story 2.1: Browse, Search, and Filter Causes" >> $GITHUB_STEP_SUMMARY
+        echo "-  Story 2.4: Frontend UI for Multi-Cause Donation" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Build Information" >> $GITHUB_STEP_SUMMARY
         echo "- Framework: React 18.2.0 + Vite 5.0.0" >> $GITHUB_STEP_SUMMARY
@@ -296,14 +296,14 @@ jobs:
     
     - name: Check JavaScript syntax
       run: |
-        echo "🔍 Validating JavaScript syntax..."
+        echo " Validating JavaScript syntax..."
         cd src/backend
         find . -name "*.js" -not -path "./node_modules/*" -exec node -c {} \;
-        echo "✅ All JavaScript files are syntactically valid"
+        echo " All JavaScript files are syntactically valid"
     
     - name: Check for TODO/FIXME comments
       run: |
-        echo "## 📝 Code Comments Analysis" >> $GITHUB_STEP_SUMMARY
+        echo "##  Code Comments Analysis" >> $GITHUB_STEP_SUMMARY
         TODO_COUNT=$(grep -r "TODO\|FIXME\|XXX" --include="*.js" --include="*.jsx" --exclude-dir=node_modules src/ | wc -l || echo 0)
         if [ $TODO_COUNT -gt 0 ]; then
           echo "Found $TODO_COUNT TODO/FIXME comments:" >> $GITHUB_STEP_SUMMARY
@@ -311,12 +311,12 @@ jobs:
           grep -r "TODO\|FIXME\|XXX" --include="*.js" --include="*.jsx" --exclude-dir=node_modules src/ | head -20 >> $GITHUB_STEP_SUMMARY || true
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         else
-          echo "✅ No TODO/FIXME comments found" >> $GITHUB_STEP_SUMMARY
+          echo " No TODO/FIXME comments found" >> $GITHUB_STEP_SUMMARY
         fi
     
     - name: Code metrics
       run: |
-        echo "## 📊 Code Metrics" >> $GITHUB_STEP_SUMMARY
+        echo "##  Code Metrics" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Backend" >> $GITHUB_STEP_SUMMARY
         echo "- JavaScript files: $(find src/backend -name '*.js' -not -path '*/node_modules/*' | wc -l)" >> $GITHUB_STEP_SUMMARY
@@ -331,29 +331,29 @@ jobs:
     
     - name: Check Epic implementation status
       run: |
-        echo "## 🎯 Epic Implementation Status" >> $GITHUB_STEP_SUMMARY
+        echo "##  Epic Implementation Status" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Epic 1: User Authentication & Access Control" >> $GITHUB_STEP_SUMMARY
-        [ -f "src/backend/routes/authRoutes.js" ] && echo "- ✅ Authentication Routes" >> $GITHUB_STEP_SUMMARY || echo "- ❌ Authentication Routes" >> $GITHUB_STEP_SUMMARY
-        [ -f "src/backend/models/User.js" ] && echo "- ✅ User Model" >> $GITHUB_STEP_SUMMARY || echo "- ❌ User Model" >> $GITHUB_STEP_SUMMARY
-        [ -f "src/frontend/src/pages/Login.jsx" ] && echo "- ✅ Login UI" >> $GITHUB_STEP_SUMMARY || echo "- ⚠️ Login UI" >> $GITHUB_STEP_SUMMARY
+        [ -f "src/backend/routes/authRoutes.js" ] && echo "-  Authentication Routes" >> $GITHUB_STEP_SUMMARY || echo "-  Authentication Routes" >> $GITHUB_STEP_SUMMARY
+        [ -f "src/backend/models/User.js" ] && echo "-  User Model" >> $GITHUB_STEP_SUMMARY || echo "-  User Model" >> $GITHUB_STEP_SUMMARY
+        [ -f "src/frontend/src/pages/Login.jsx" ] && echo "-  Login UI" >> $GITHUB_STEP_SUMMARY || echo "-  Login UI" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Epic 2: Core Donation Experience" >> $GITHUB_STEP_SUMMARY
-        [ -f "src/backend/routes/donationRoutes.js" ] && echo "- ✅ Donation Routes" >> $GITHUB_STEP_SUMMARY || echo "- ❌ Donation Routes" >> $GITHUB_STEP_SUMMARY
-        [ -f "src/backend/routes/causeRoutes.js" ] && echo "- ✅ Cause Routes" >> $GITHUB_STEP_SUMMARY || echo "- ❌ Cause Routes" >> $GITHUB_STEP_SUMMARY
-        [ -f "src/frontend/src/pages/BrowseCauses.jsx" ] && echo "- ✅ Browse Causes UI" >> $GITHUB_STEP_SUMMARY || echo "- ⚠️ Browse Causes UI" >> $GITHUB_STEP_SUMMARY
-        [ -f "src/frontend/src/pages/MultiCauseDonation.jsx" ] && echo "- ✅ Multi-Cause Donation UI" >> $GITHUB_STEP_SUMMARY || echo "- ⚠️ Multi-Cause Donation UI" >> $GITHUB_STEP_SUMMARY
+        [ -f "src/backend/routes/donationRoutes.js" ] && echo "-  Donation Routes" >> $GITHUB_STEP_SUMMARY || echo "-  Donation Routes" >> $GITHUB_STEP_SUMMARY
+        [ -f "src/backend/routes/causeRoutes.js" ] && echo "-  Cause Routes" >> $GITHUB_STEP_SUMMARY || echo "-  Cause Routes" >> $GITHUB_STEP_SUMMARY
+        [ -f "src/frontend/src/pages/BrowseCauses.jsx" ] && echo "-  Browse Causes UI" >> $GITHUB_STEP_SUMMARY || echo "-  Browse Causes UI" >> $GITHUB_STEP_SUMMARY
+        [ -f "src/frontend/src/pages/MultiCauseDonation.jsx" ] && echo "-  Multi-Cause Donation UI" >> $GITHUB_STEP_SUMMARY || echo "-  Multi-Cause Donation UI" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Epic 5: System Foundation" >> $GITHUB_STEP_SUMMARY
-        grep -q "helmet" src/backend/package.json && echo "- ✅ Security Headers (Helmet)" >> $GITHUB_STEP_SUMMARY || echo "- ❌ Security Headers" >> $GITHUB_STEP_SUMMARY
-        grep -q "express-rate-limit" src/backend/package.json && echo "- ✅ Rate Limiting" >> $GITHUB_STEP_SUMMARY || echo "- ❌ Rate Limiting" >> $GITHUB_STEP_SUMMARY
-        grep -q "pino" src/backend/package.json && echo "- ✅ Structured Logging" >> $GITHUB_STEP_SUMMARY || echo "- ❌ Structured Logging" >> $GITHUB_STEP_SUMMARY
+        grep -q "helmet" src/backend/package.json && echo "-  Security Headers (Helmet)" >> $GITHUB_STEP_SUMMARY || echo "-  Security Headers" >> $GITHUB_STEP_SUMMARY
+        grep -q "express-rate-limit" src/backend/package.json && echo "-  Rate Limiting" >> $GITHUB_STEP_SUMMARY || echo "-  Rate Limiting" >> $GITHUB_STEP_SUMMARY
+        grep -q "pino" src/backend/package.json && echo "-  Structured Logging" >> $GITHUB_STEP_SUMMARY || echo "-  Structured Logging" >> $GITHUB_STEP_SUMMARY
     
     - name: Dependency check
       run: |
         cd src/backend
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## 📦 Backend Dependencies" >> $GITHUB_STEP_SUMMARY
+        echo "##  Backend Dependencies" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         npm list --depth=0 >> $GITHUB_STEP_SUMMARY 2>&1 || true
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
@@ -375,10 +375,10 @@ jobs:
     - name: Backend security audit
       run: |
         cd src/backend
-        echo "🔒 Running npm audit for backend..."
+        echo " Running npm audit for backend..."
         npm audit --audit-level=moderate || true
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## 🔒 Security Audit Results" >> $GITHUB_STEP_SUMMARY
+        echo "##  Security Audit Results" >> $GITHUB_STEP_SUMMARY
         echo "### Backend Dependencies" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         npm audit --audit-level=moderate >> $GITHUB_STEP_SUMMARY 2>&1 || echo "Vulnerabilities found - review required" >> $GITHUB_STEP_SUMMARY
@@ -387,7 +387,7 @@ jobs:
     - name: Frontend security audit
       run: |
         cd src/frontend
-        echo "🔒 Running npm audit for frontend..."
+        echo " Running npm audit for frontend..."
         npm audit --audit-level=moderate || true
         echo "### Frontend Dependencies" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
@@ -396,45 +396,45 @@ jobs:
     
     - name: Check for hardcoded secrets
       run: |
-        echo "🔍 Checking for hardcoded secrets..."
+        echo " Checking for hardcoded secrets..."
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## 🔐 Secret Scanning" >> $GITHUB_STEP_SUMMARY
+        echo "##  Secret Scanning" >> $GITHUB_STEP_SUMMARY
         
         # Check for hardcoded passwords (excluding test files)
         if grep -r "password\s*=\s*['\"].*['\"]" --include="*.js" --exclude-dir=node_modules --exclude-dir=scripts --exclude-dir=test src/; then
-          echo "⚠️ Warning: Potential hardcoded passwords found" >> $GITHUB_STEP_SUMMARY
+          echo " Warning: Potential hardcoded passwords found" >> $GITHUB_STEP_SUMMARY
         else
-          echo "✅ No hardcoded passwords detected" >> $GITHUB_STEP_SUMMARY
+          echo " No hardcoded passwords detected" >> $GITHUB_STEP_SUMMARY
         fi
         
         # Check for API keys
         if grep -r "api[_-]key\s*=\s*['\"].*['\"]" --include="*.js" --include="*.jsx" --exclude-dir=node_modules src/; then
-          echo "⚠️ Warning: Potential API keys found" >> $GITHUB_STEP_SUMMARY
+          echo " Warning: Potential API keys found" >> $GITHUB_STEP_SUMMARY
         else
-          echo "✅ No hardcoded API keys detected" >> $GITHUB_STEP_SUMMARY
+          echo " No hardcoded API keys detected" >> $GITHUB_STEP_SUMMARY
         fi
     
     - name: Check for sensitive file exposure
       run: |
-        echo "🔍 Checking for sensitive files..."
+        echo " Checking for sensitive files..."
         SENSITIVE_FILES=$(find . -name ".env" -o -name "*.pem" -o -name "*.key" -o -name "*.pfx" -not -path "./node_modules/*" -not -path "./.git/*")
         if [ -n "$SENSITIVE_FILES" ]; then
-          echo "⚠️ Sensitive files found:" >> $GITHUB_STEP_SUMMARY
+          echo " Sensitive files found:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "$SENSITIVE_FILES" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         else
-          echo "✅ No sensitive files in repository" >> $GITHUB_STEP_SUMMARY
+          echo " No sensitive files in repository" >> $GITHUB_STEP_SUMMARY
         fi
     
     - name: HTTPS/TLS verification
       run: |
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## 🔐 HTTPS/TLS Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "##  HTTPS/TLS Configuration" >> $GITHUB_STEP_SUMMARY
         if [ -f "src/backend/server-https.js" ]; then
-          echo "✅ HTTPS server implementation found (Story 5.1)" >> $GITHUB_STEP_SUMMARY
+          echo " HTTPS server implementation found (Story 5.1)" >> $GITHUB_STEP_SUMMARY
         else
-          echo "⚠️ HTTPS server not found" >> $GITHUB_STEP_SUMMARY
+          echo " HTTPS server not found" >> $GITHUB_STEP_SUMMARY
         fi
 
   build-check:
@@ -469,17 +469,17 @@ jobs:
     
     - name: Verify build artifacts
       run: |
-        echo "## ✅ Build Verification Complete" >> $GITHUB_STEP_SUMMARY
+        echo "##  Build Verification Complete" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Backend" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ All dependencies installed" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Server entry points validated" >> $GITHUB_STEP_SUMMARY
+        echo "-  All dependencies installed" >> $GITHUB_STEP_SUMMARY
+        echo "-  Server entry points validated" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Frontend" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ All dependencies installed" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Production build successful" >> $GITHUB_STEP_SUMMARY
+        echo "-  All dependencies installed" >> $GITHUB_STEP_SUMMARY
+        echo "-  Production build successful" >> $GITHUB_STEP_SUMMARY
         if [ -d "src/frontend/dist" ]; then
-          echo "- ✅ Build artifacts created ($(du -sh src/frontend/dist | cut -f1))" >> $GITHUB_STEP_SUMMARY
+          echo "-  Build artifacts created ($(du -sh src/frontend/dist | cut -f1))" >> $GITHUB_STEP_SUMMARY
         fi
 
   # ============================================================================
@@ -498,7 +498,7 @@ jobs:
     
     - name: Create staging deployment package
       run: |
-        echo "📦 Creating staging deployment package..."
+        echo " Creating staging deployment package..."
         tar -czf staging-deployment.tar.gz \
           --exclude='node_modules' \
           --exclude='*.log' \
@@ -515,7 +515,7 @@ jobs:
     
     - name: Staging deployment summary
       run: |
-        echo "## 🚀 Staging Deployment Package Created" >> $GITHUB_STEP_SUMMARY
+        echo "##  Staging Deployment Package Created" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Deployment Details" >> $GITHUB_STEP_SUMMARY
         echo "- Environment: **Staging**" >> $GITHUB_STEP_SUMMARY
@@ -524,7 +524,7 @@ jobs:
         echo "- Author: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
         echo "- Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Ready for staging deployment!" >> $GITHUB_STEP_SUMMARY
+        echo " Ready for staging deployment!" >> $GITHUB_STEP_SUMMARY
 
   deploy-production:
     name: Deploy to Production
@@ -555,7 +555,7 @@ jobs:
     
     - name: Create production deployment package
       run: |
-        echo "📦 Creating production deployment package..."
+        echo " Creating production deployment package..."
         tar -czf production-deployment.tar.gz \
           --exclude='node_modules' \
           --exclude='*.log' \
@@ -574,7 +574,7 @@ jobs:
     
     - name: Production deployment summary
       run: |
-        echo "## 🚀 Production Deployment Package Created" >> $GITHUB_STEP_SUMMARY
+        echo "##  Production Deployment Package Created" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Deployment Details" >> $GITHUB_STEP_SUMMARY
         echo "- Environment: **Production**" >> $GITHUB_STEP_SUMMARY
@@ -584,13 +584,15 @@ jobs:
         echo "- Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Package Contents" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Backend application (production dependencies)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Frontend build (optimized for production)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ MongoDB migrations (if any)" >> $GITHUB_STEP_SUMMARY
+        echo "-  Backend application (production dependencies)" >> $GITHUB_STEP_SUMMARY
+        echo "-  Frontend build (optimized for production)" >> $GITHUB_STEP_SUMMARY
+        echo "-  MongoDB migrations (if any)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Epic Coverage" >> $GITHUB_STEP_SUMMARY
         echo "- Epic 1: User Authentication & Access Control" >> $GITHUB_STEP_SUMMARY
         echo "- Epic 2: Core Donation Experience" >> $GITHUB_STEP_SUMMARY
         echo "- Epic 5: System Foundation & Operational Readiness" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ **Ready for production deployment!**" >> $GITHUB_STEP_SUMMARY
+        echo " **Ready for production deployment!**" >> $GITHUB_STEP_SUMMARY
+
+
