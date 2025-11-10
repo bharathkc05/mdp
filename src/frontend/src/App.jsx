@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import BrowseCauses from "./pages/BrowseCauses";
+import MultiCauseDonation from "./pages/MultiCauseDonation";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -50,6 +51,14 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/causes" element={<BrowseCauses />} />
+            <Route
+              path="/donate/multi"
+              element={
+                <ProtectedRoute>
+                  <MultiCauseDonation />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/dashboard"
               element={

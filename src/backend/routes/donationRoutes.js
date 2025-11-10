@@ -235,6 +235,193 @@ router.post('/', donationRateLimiter, async (req, res) => {
   }
 });
 
+// @route   POST /api/donate/multi
+// @desc    Make a donation to multiple causes with allocation
+// @access  Authenticated users (donors)
+// @implements Story 2.4 - Multi-Cause Donation
+// Story 5.3: Rate Limited
+router.post('/multi', donationRateLimiter, async (req, res) => {
+  const session = await mongoose.startSession();
+  
+  try {
+    const { causes, totalAmount, paymentMethod, paymentId } = req.body;
+
+    // Validation
+    if (!causes || !Array.isArray(causes) || causes.length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'At least one cause must be selected' 
+      });
+    }
+
+    if (!totalAmount || totalAmount <= 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Total donation amount must be greater than 0' 
+      });
+    }
+
+    // Validate allocations
+    const totalAllocated = causes.reduce((sum, c) => sum + (c.amount || 0), 0);
+    if (Math.abs(totalAllocated - totalAmount) > 0.01) { // Allow for floating point errors
+      return res.status(400).json({ 
+        success: false,
+        message: `Allocated amounts (${totalAllocated}) must equal total amount (${totalAmount})` 
+      });
+    }
+
+    // Validate each cause allocation
+    for (const causeAllocation of causes) {
+      if (!causeAllocation.causeId || !causeAllocation.amount) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Each cause must have a valid ID and amount' 
+        });
+      }
+
+      if (causeAllocation.amount <= 0) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Each cause allocation must be greater than 0' 
+        });
+      }
+    }
+
+    // Fetch all causes and validate
+    const causeIds = causes.map(c => c.causeId);
+    const causeDocs = await Cause.find({ _id: { $in: causeIds } });
+    
+    if (causeDocs.length !== causeIds.length) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'One or more causes not found' 
+      });
+    }
+
+    // Check if all causes are active
+    const inactiveCauses = causeDocs.filter(c => c.status !== 'active');
+    if (inactiveCauses.length > 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: `Some causes are not active: ${inactiveCauses.map(c => c.name).join(', ')}` 
+      });
+    }
+
+    // Check for ended causes
+    const endedCauses = causeDocs.filter(c => c.endDate && new Date(c.endDate) < new Date());
+    if (endedCauses.length > 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: `Some causes have ended: ${endedCauses.map(c => c.name).join(', ')}` 
+      });
+    }
+
+    // Generate payment ID
+    const recordedPaymentId = paymentId || (crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'));
+    const recordedPaymentMethod = paymentMethod || 'manual';
+
+    console.log(`[Multi-Cause Payment Stub] Payment ID: ${recordedPaymentId}, Total: ${totalAmount}, Causes: ${causes.length}`);
+
+    // START ATOMIC TRANSACTION
+    session.startTransaction();
+
+    try {
+      const donationRecords = [];
+      const updatedCauses = [];
+
+      // Update each cause
+      for (const causeAllocation of causes) {
+        const causeDoc = causeDocs.find(c => c._id.toString() === causeAllocation.causeId);
+        
+        // Update cause with donation
+        const updatedCause = await Cause.findByIdAndUpdate(
+          causeAllocation.causeId,
+          {
+            $inc: { currentAmount: causeAllocation.amount, donorCount: 1 }
+          },
+          { new: true, session }
+        );
+
+        // Check if target is reached
+        if (updatedCause.currentAmount >= updatedCause.targetAmount && updatedCause.status === 'active') {
+          updatedCause.status = 'completed';
+          await updatedCause.save({ session });
+        }
+
+        updatedCauses.push({
+          causeId: updatedCause._id,
+          name: updatedCause.name,
+          currentAmount: updatedCause.currentAmount,
+          targetAmount: updatedCause.targetAmount,
+          status: updatedCause.status
+        });
+
+        // Create donation record for this cause
+        donationRecords.push({
+          amount: causeAllocation.amount,
+          cause: causeDoc.name,
+          causeId: causeDoc._id,
+          paymentId: recordedPaymentId,
+          paymentMethod: recordedPaymentMethod,
+          status: 'completed',
+          date: new Date(),
+          isMultiCause: true
+        });
+      }
+
+      // Update user's donation history
+      await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          $push: { donations: { $each: donationRecords } }
+        },
+        { new: true, session }
+      );
+
+      // Commit the transaction
+      await session.commitTransaction();
+      console.log(`[Multi-Cause Transaction Success] Payment: ${recordedPaymentId}, User: ${req.user.email}, Total: ${totalAmount}`);
+
+      res.status(201).json({
+        success: true,
+        message: `Successfully donated to ${causes.length} causes! Thank you for your contribution.`,
+        data: {
+          totalAmount,
+          paymentId: recordedPaymentId,
+          paymentMethod: recordedPaymentMethod,
+          causesCount: causes.length,
+          donations: donationRecords.map((d, idx) => ({
+            cause: d.cause,
+            amount: d.amount,
+            causeStatus: updatedCauses[idx]
+          })),
+          date: donationRecords[0].date
+        }
+      });
+
+    } catch (transactionError) {
+      await session.abortTransaction();
+      console.error(`[Multi-Cause Transaction Rollback]`, {
+        error: transactionError.message,
+        user: req.user.email,
+        paymentId: recordedPaymentId,
+        timestamp: new Date().toISOString()
+      });
+      throw transactionError;
+    }
+
+  } catch (error) {
+    console.error('[Multi-Cause Donation Error]', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to process multi-cause donation. No charges were made. Please try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  } finally {
+    session.endSession();
+  }
+});
+
 // @route   GET /api/donate/history
 // @desc    Get user's donation history
 // @access  Authenticated users
