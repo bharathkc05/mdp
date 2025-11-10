@@ -28,7 +28,7 @@ async function createTransporter() {
 }
 
 export async function sendPasswordResetEmail(toEmail, token) {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5175';
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const link = `${frontendUrl.replace(/\/$/, '')}/reset-password?token=${token}`;
   
   const transporter = await createTransporter();
@@ -70,7 +70,7 @@ export async function sendPasswordResetEmail(toEmail, token) {
 
 export async function sendVerificationEmail(toEmail, token) {
   // Build verification link that points to the frontend verify page
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5175';
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const link = `${frontendUrl.replace(/\/$/, '')}/verify?token=${token}`;
 
   // Create transporter (prefer explicit SMTP env, fallback to Ethereal)

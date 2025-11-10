@@ -87,8 +87,8 @@ router.post('/reset-password', passwordResetRateLimiter, async (req, res) => {
     }
 
     // Update password
-    const hashed = await bcrypt.hash(newPassword, 10);
-    user.password = hashed;
+    // Don't manually hash - the pre-save hook in User model will handle it
+    user.password = newPassword;
     user.resetToken = undefined;
     user.resetTokenExpiry = undefined;
     await user.save();
