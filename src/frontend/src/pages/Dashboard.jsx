@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import DonationForm from "../components/DonationForm";
 import DonationStats from "../components/DonationStats";
 import TwoFactorSetup from "../components/TwoFactorSetup";
 import { authAPI } from "../api";
@@ -69,12 +68,6 @@ export default function Dashboard() {
             </span>
           )}
         </div>
-        <button
-          onClick={handleLogout}
-          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-        >
-          Logout
-        </button>
       </div>
 
       {/* Admin-specific section */}
@@ -97,15 +90,10 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Donor-specific section - Donation features */}
+      {/* Donor-specific section - Donation Statistics */}
       {user?.role === 'donor' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="space-y-8">
-            <DonationStats />
-          </div>
-          <div>
-            <DonationForm />
-          </div>
+        <div className="max-w-4xl">
+          <DonationStats />
         </div>
       )}
     </div>
