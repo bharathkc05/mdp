@@ -10,12 +10,30 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import BrowseCauses from "./pages/BrowseCauses";
 import MultiCauseDonation from "./pages/MultiCauseDonation";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminCauseDashboard from "./pages/AdminCauseDashboard";
+import AdminUserManagement from "./pages/AdminUserManagement";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
   if (!token) {
     return <Navigate to="/login" replace />;
   }
+  return children;
+};
+
+const AdminRoute = ({ children }) => {
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (user.role !== "admin") {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
   return children;
 };
 
@@ -63,8 +81,34 @@ function App() {
               path="/dashboard"
               element={
                 <ProtectedRoute>
+                  {/* Note: /dashboard is the User Profile page - shows role-specific content */}
                   <Dashboard />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  {/* Note: /admin is the Admin Dashboard - admin-only management interface */}
+                  <AdminDashboard />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/causes"
+              element={
+                <AdminRoute>
+                  <AdminCauseDashboard />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <AdminRoute>
+                  <AdminUserManagement />
+                </AdminRoute>
               }
             />
           </Routes>

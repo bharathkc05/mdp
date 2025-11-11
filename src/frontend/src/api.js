@@ -87,9 +87,30 @@ export const authAPI = {
 
 // Donations API
 export const donationsAPI = {
-  getDonations: () => API.get("/donations/my-donations"),
-  makeDonation: (data) => API.post("/donations", data),
-  getStats: () => API.get("/donations/stats"),
+  getDonations: () => API.get("/donate/history"),
+  makeDonation: (data) => API.post("/donate", data),
+  getStats: () => API.get("/donate/stats"),
 };
+
+// Admin API
+export const adminAPI = {
+  // Dashboard
+  getDashboardStats: () => API.get("/admin/dashboard/stats"),
+  
+  // Causes management
+  getCauses: (params) => API.get("/admin/causes", { params }),
+  getCause: (id) => API.get(`/admin/causes/${id}`),
+  createCause: (data) => API.post("/admin/causes", data),
+  updateCause: (id, data) => API.put(`/admin/causes/${id}`, data),
+  deleteCause: (id) => API.delete(`/admin/causes/${id}`),
+  archiveCause: (id) => API.patch(`/admin/causes/${id}/archive`),
+  
+  // Users management
+  getUsers: () => API.get("/admin/users"),
+  getUser: (id) => API.get(`/admin/users/${id}`),
+  updateUserRole: (id, role) => API.put(`/admin/users/${id}/role`, { role }),
+};
+
+
 
 

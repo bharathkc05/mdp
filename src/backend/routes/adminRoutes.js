@@ -10,17 +10,58 @@ router.use(protect);
 router.use(authorize('admin'));
 
 // @route   GET /api/admin/causes
-// @desc    Get all causes (admin view with full details)
+// @desc    Get all causes (admin view with full details, pagination, search, filter)
 // @access  Admin only
 router.get('/causes', async (req, res) => {
   try {
-    const causes = await Cause.find()
+    const { page = 1, limit = 10, search = '', category = '', status = '' } = req.query;
+    
+    // Build query object
+    const query = {};
+    
+    // Add search filter (case-insensitive search in name and description)
+    if (search && search.trim()) {
+      query.$or = [
+        { name: { $regex: search.trim(), $options: 'i' } },
+        { description: { $regex: search.trim(), $options: 'i' } }
+      ];
+    }
+    
+    // Add category filter
+    if (category && category.trim() && category !== 'all') {
+      query.category = category.toLowerCase();
+    }
+    
+    // Add status filter (supports 'archived' as a filter for non-active statuses)
+    if (status && status.trim()) {
+      if (status === 'archived') {
+        query.status = { $in: ['paused', 'completed', 'cancelled'] };
+      } else if (status !== 'all') {
+        query.status = status;
+      }
+    }
+    
+    // Calculate pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+    
+    // Get total count for pagination
+    const total = await Cause.countDocuments(query);
+    
+    // Fetch causes with pagination and sorting
+    const causes = await Cause.find(query)
       .populate('createdBy', 'firstName lastName email')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
     
     res.json({
       success: true,
       count: causes.length,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum),
       data: causes
     });
   } catch (error) {
@@ -203,6 +244,49 @@ router.delete('/causes/:id', async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: 'Server error while deleting cause' 
+    });
+  }
+});
+
+// @route   PATCH /api/admin/causes/:id/archive
+// @desc    Archive/unarchive a cause (toggle between active and cancelled)
+// @access  Admin only
+router.patch('/causes/:id/archive', async (req, res) => {
+  try {
+    const cause = await Cause.findById(req.params.id);
+    
+    if (!cause) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Cause not found' 
+      });
+    }
+
+    // Toggle archive status: if active, set to cancelled; if cancelled, set to active
+    if (cause.status === 'active') {
+      cause.status = 'cancelled';
+    } else if (cause.status === 'cancelled') {
+      cause.status = 'active';
+    } else {
+      // For completed or paused, we can set to cancelled
+      cause.status = 'cancelled';
+    }
+
+    await cause.save();
+
+    const updatedCause = await Cause.findById(cause._id)
+      .populate('createdBy', 'firstName lastName email');
+
+    res.json({
+      success: true,
+      message: `Cause ${cause.status === 'cancelled' ? 'archived' : 'unarchived'} successfully`,
+      data: updatedCause
+    });
+  } catch (error) {
+    console.error('Error archiving cause:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while archiving cause' 
     });
   }
 });
