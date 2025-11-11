@@ -88,6 +88,16 @@ export default function Login() {
       // Successful login
       localStorage.setItem("token", data.token);
       localStorage.setItem("email", form.email);
+      
+      // Store user object with role for AdminRoute to work
+      const userObj = {
+        email: form.email,
+        role: data.role || 'donor',
+        firstName: data.firstName,
+        lastName: data.lastName
+      };
+      localStorage.setItem("user", JSON.stringify(userObj));
+      
       if (data.role) {
         localStorage.setItem("role", data.role);
       }
