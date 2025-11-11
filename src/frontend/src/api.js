@@ -92,6 +92,20 @@ export const donationsAPI = {
   getStats: () => API.get("/donate/stats"),
 };
 
+// System Health API
+export const systemAPI = {
+  getHealth: async () => {
+    try {
+      const response = await axios.get(`${baseURL.replace('/api', '')}/health`, {
+        timeout: 5000 // 5 second timeout
+      });
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+};
+
 // Admin API
 export const adminAPI = {
   // Dashboard
