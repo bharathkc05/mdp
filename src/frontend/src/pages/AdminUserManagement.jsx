@@ -195,11 +195,11 @@ export default function AdminUserManagement() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.isVerified
+                          user.verified
                             ? 'bg-green-100 text-green-800'
                             : 'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {user.isVerified ? '✓ Verified' : '⚠ Pending'}
+                          {user.verified ? '✓ Verified' : '⚠ Pending'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

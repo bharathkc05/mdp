@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { adminAPI } from '../api';
+import { adminAPI, systemAPI } from '../api';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -9,10 +9,39 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [systemStatus, setSystemStatus] = useState({
+    backend: 'checking',
+    database: 'checking',
+    auth: 'checking'
+  });
 
   useEffect(() => {
     fetchDashboardData();
+    checkSystemHealth();
+    // Check system health every 30 seconds
+    const healthInterval = setInterval(checkSystemHealth, 30000);
+    return () => clearInterval(healthInterval);
   }, []);
+
+  const checkSystemHealth = async () => {
+    try {
+      const response = await systemAPI.getHealth();
+      const isUp = response.status === 200 && response.data?.status === 'UP';
+      const dbConnected = response.data?.database?.status === 'connected';
+      
+      setSystemStatus({
+        backend: isUp ? 'operational' : 'down',
+        database: dbConnected ? 'connected' : 'disconnected',
+        auth: isUp ? 'active' : 'inactive'
+      });
+    } catch (error) {
+      setSystemStatus({
+        backend: 'down',
+        database: 'disconnected',
+        auth: 'inactive'
+      });
+    }
+  };
 
   const fetchDashboardData = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -390,34 +419,105 @@ export default function AdminDashboard() {
             System Status
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="bg-green-500 rounded-full p-2 mr-4 relative">
+            {/* Backend Server Status */}
+            <div className={`flex items-center p-4 rounded-lg border ${
+              systemStatus.backend === 'operational' 
+                ? 'bg-green-50 border-green-200' 
+                : systemStatus.backend === 'checking'
+                ? 'bg-yellow-50 border-yellow-200'
+                : 'bg-red-50 border-red-200'
+            }`}>
+              <div className={`rounded-full p-2 mr-4 relative ${
+                systemStatus.backend === 'operational' 
+                  ? 'bg-green-500' 
+                  : systemStatus.backend === 'checking'
+                  ? 'bg-yellow-500'
+                  : 'bg-red-500'
+              }`}>
                 <div className="w-4 h-4 bg-white rounded-full animate-pulse"></div>
-                <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
+                {systemStatus.backend === 'operational' && (
+                  <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
+                )}
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900">Backend Server</p>
-                <p className="text-xs text-green-600 font-semibold">● Operational</p>
+                <p className={`text-xs font-semibold ${
+                  systemStatus.backend === 'operational' 
+                    ? 'text-green-600' 
+                    : systemStatus.backend === 'checking'
+                    ? 'text-yellow-600'
+                    : 'text-red-600'
+                }`}>
+                  ● {systemStatus.backend === 'operational' ? 'Operational' : systemStatus.backend === 'checking' ? 'Checking...' : 'Offline'}
+                </p>
               </div>
             </div>
-            <div className="flex items-center p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="bg-green-500 rounded-full p-2 mr-4 relative">
+            
+            {/* Database Status */}
+            <div className={`flex items-center p-4 rounded-lg border ${
+              systemStatus.database === 'connected' 
+                ? 'bg-green-50 border-green-200' 
+                : systemStatus.database === 'checking'
+                ? 'bg-yellow-50 border-yellow-200'
+                : 'bg-red-50 border-red-200'
+            }`}>
+              <div className={`rounded-full p-2 mr-4 relative ${
+                systemStatus.database === 'connected' 
+                  ? 'bg-green-500' 
+                  : systemStatus.database === 'checking'
+                  ? 'bg-yellow-500'
+                  : 'bg-red-500'
+              }`}>
                 <div className="w-4 h-4 bg-white rounded-full animate-pulse"></div>
-                <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
+                {systemStatus.database === 'connected' && (
+                  <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
+                )}
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900">Database</p>
-                <p className="text-xs text-green-600 font-semibold">● Connected</p>
+                <p className={`text-xs font-semibold ${
+                  systemStatus.database === 'connected' 
+                    ? 'text-green-600' 
+                    : systemStatus.database === 'checking'
+                    ? 'text-yellow-600'
+                    : 'text-red-600'
+                }`}>
+                  ● {systemStatus.database === 'connected' ? 'Connected' : systemStatus.database === 'checking' ? 'Checking...' : 'Disconnected'}
+                </p>
               </div>
             </div>
-            <div className="flex items-center p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="bg-green-500 rounded-full p-2 mr-4 relative">
+            
+            {/* Authentication Status */}
+            <div className={`flex items-center p-4 rounded-lg border ${
+              systemStatus.auth === 'active' 
+                ? 'bg-green-50 border-green-200' 
+                : systemStatus.auth === 'checking'
+                ? 'bg-yellow-50 border-yellow-200'
+                : 'bg-red-50 border-red-200'
+            }`}>
+              <div className={`rounded-full p-2 mr-4 relative ${
+                systemStatus.auth === 'active' 
+                  ? 'bg-green-500' 
+                  : systemStatus.auth === 'checking'
+                  ? 'bg-yellow-500'
+                  : 'bg-red-500'
+              }`}>
                 <div className="w-4 h-4 bg-white rounded-full animate-pulse"></div>
-                <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
+                {systemStatus.auth === 'active' && (
+                  <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
+                )}
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900">Authentication</p>
-                <p className="text-xs text-green-600 font-semibold">● Active</p>
+                <p className={`text-xs font-semibold ${
+                  systemStatus.auth === 'active' 
+                    ? 'text-green-600' 
+                    : systemStatus.auth === 'checking'
+                    ? 'text-yellow-600'
+                    : 'text-red-600'
+                }`}>
+                  ● {systemStatus.auth === 'active' ? 'Active' : systemStatus.auth === 'checking' ? 'Checking...' : 'Inactive'}
+                </p>
               </div>
             </div>
           </div>
