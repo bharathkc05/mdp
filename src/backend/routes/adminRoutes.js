@@ -2,6 +2,14 @@ import express from "express";
 import Cause from "../models/Cause.js";
 import User from "../models/User.js";
 import { protect, authorize } from "../middleware/auth.js";
+// Story 3.4: Audit Logging
+import { 
+  logCauseCreated, 
+  logCauseUpdated, 
+  logCauseDeleted,
+  logCauseArchived,
+  logUserRoleChanged 
+} from "../utils/auditLogger.js";
 
 const router = express.Router();
 
@@ -117,6 +125,9 @@ router.post('/causes', async (req, res) => {
     const populatedCause = await Cause.findById(cause._id)
       .populate('createdBy', 'firstName lastName email');
 
+    // Story 3.4: Log cause creation
+    await logCauseCreated(req, populatedCause);
+
     res.status(201).json({
       success: true,
       message: 'Cause created successfully',
@@ -197,6 +208,9 @@ router.put('/causes/:id', async (req, res) => {
     const updatedCause = await Cause.findById(cause._id)
       .populate('createdBy', 'firstName lastName email');
 
+    // Story 3.4: Log cause update
+    await logCauseUpdated(req, updatedCause, req.body);
+
     res.json({
       success: true,
       message: 'Cause updated successfully',
@@ -232,6 +246,9 @@ router.delete('/causes/:id', async (req, res) => {
         message: 'Cannot delete a cause that has received donations. Consider marking it as cancelled instead.' 
       });
     }
+
+    // Story 3.4: Log cause deletion
+    await logCauseDeleted(req, cause);
 
     await Cause.findByIdAndDelete(req.params.id);
 
@@ -276,6 +293,9 @@ router.patch('/causes/:id/archive', async (req, res) => {
 
     const updatedCause = await Cause.findById(cause._id)
       .populate('createdBy', 'firstName lastName email');
+
+    // Story 3.4: Log cause archiving
+    await logCauseArchived(req, updatedCause);
 
     res.json({
       success: true,
@@ -374,8 +394,12 @@ router.put('/users/:id/role', async (req, res) => {
       });
     }
 
+    const oldRole = user.role;
     user.role = role;
     await user.save();
+
+    // Story 3.4: Log user role change
+    await logUserRoleChanged(req, user, oldRole, role);
 
     res.json({
       success: true,

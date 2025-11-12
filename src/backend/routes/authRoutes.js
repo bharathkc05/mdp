@@ -13,6 +13,15 @@ import {
   registrationRateLimiter 
 } from "../middleware/rateLimiter.js";
 import { verifyBackupCode } from "./twoFactorRoutes.js";
+// Story 3.4: Audit Logging
+import { 
+  logUserRegistration, 
+  logLoginSuccess, 
+  logLoginFailed,
+  logUserLogout,
+  logPasswordReset,
+  logEmailVerified
+} from "../utils/auditLogger.js";
 
 const router = express.Router();
 
@@ -94,6 +103,9 @@ router.post('/reset-password', passwordResetRateLimiter, async (req, res) => {
     user.resetToken = undefined;
     user.resetTokenExpiry = undefined;
     await user.save();
+
+    // Story 3.4: Log password reset
+    await logPasswordReset(req, user);
 
     res.json({ message: 'Password successfully reset. You can now login with your new password.' });
   } catch (error) {
@@ -181,6 +193,9 @@ router.post('/register', registrationRateLimiter, async (req, res) => {
     // create verification token
     const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
+    // Story 3.4: Log user registration
+    await logUserRegistration(req, user);
+
     // send verification email
       try {
         if (req?.log) req.log.info('Attempting to send verification email');
@@ -233,6 +248,9 @@ router.get('/verify', async (req, res) => {
     await user.save();
     console.log('User verified:', user.email);
     
+    // Story 3.4: Log email verification
+    await logEmailVerified(req, user);
+    
     return res.json({ message: 'Email verified successfully. You can now login.' });
   } catch (err) {
     console.error('Verification error:', err);
@@ -258,7 +276,11 @@ router.post('/login', loginRateLimiter, async (req, res) => {
 
     // Check password first
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).json({ message: 'Invalid password' });
+    if (!valid) {
+      // Story 3.4: Log failed login attempt
+      await logLoginFailed(req, email, 'Invalid password');
+      return res.status(401).json({ message: 'Invalid password' });
+    }
     
     // Check verification after password is confirmed
     if (!user.verified) {
@@ -328,6 +350,9 @@ router.post('/login', loginRateLimiter, async (req, res) => {
     user.lastActivity = Date.now();
     await user.save();
     
+    // Story 3.4: Log successful login
+    await logLoginSuccess(req, user);
+    
     return res.json({ message: 'Login successful', token, role: user.role });
   } catch (err) {
     console.error(err);
@@ -382,6 +407,9 @@ router.post('/logout', protect, async (req, res) => {
     );
 
     await user.save();
+
+    // Story 3.4: Log user logout
+    await logUserLogout(req, user);
 
     res.json({ 
       message: 'Logged out successfully',
