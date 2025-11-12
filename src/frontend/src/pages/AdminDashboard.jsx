@@ -224,7 +224,7 @@ export default function AdminDashboard() {
             </svg>
             Quick Actions
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Link
               to="/admin/causes"
               className="group bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-1 hover:scale-105"
@@ -266,8 +266,28 @@ export default function AdminDashboard() {
             </Link>
 
             <Link
-              to="/dashboard"
+              to="/admin/analytics"
               className="group bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-1 hover:scale-105"
+            >
+              <div className="flex items-center text-white">
+                <div className="bg-white bg-opacity-20 rounded-lg p-3 mr-4 group-hover:bg-opacity-30 transition-colors">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold">Analytics Dashboard</h3>
+                  <p className="text-purple-100 text-sm mt-1">View trends and insights</p>
+                </div>
+                <svg className="w-6 h-6 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </Link>
+
+            <Link
+              to="/dashboard"
+              className="group bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-1 hover:scale-105"
             >
               <div className="flex items-center text-white">
                 <div className="bg-white bg-opacity-20 rounded-lg p-3 mr-4 group-hover:bg-opacity-30 transition-colors">
@@ -277,7 +297,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold">2FA Settings</h3>
-                  <p className="text-purple-100 text-sm mt-1">Two-factor authentication</p>
+                  <p className="text-orange-100 text-sm mt-1">Two-factor authentication</p>
                 </div>
                 <svg className="w-6 h-6 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />

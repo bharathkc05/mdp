@@ -13,6 +13,7 @@ import MultiCauseDonation from "./pages/MultiCauseDonation";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCauseDashboard from "./pages/AdminCauseDashboard";
 import AdminUserManagement from "./pages/AdminUserManagement";
+import AdminAnalyticsDashboard from "./pages/AdminAnalyticsDashboard";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -108,6 +109,14 @@ function App() {
               element={
                 <AdminRoute>
                   <AdminUserManagement />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/analytics"
+              element={
+                <AdminRoute>
+                  <AdminAnalyticsDashboard />
                 </AdminRoute>
               }
             />
