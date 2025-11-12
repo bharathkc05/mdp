@@ -106,6 +106,16 @@ export const systemAPI = {
   }
 };
 
+// Dashboard Analytics API (Story 4.1 & 4.2)
+export const dashboardAPI = {
+  getAggregatedDonations: (params) => API.get("/dashboard/aggregated-donations", { params }),
+  getDonationTrends: (params) => API.get("/dashboard/donation-trends", { params }),
+  getCategoryBreakdown: () => API.get("/dashboard/category-breakdown"),
+  getTopCauses: (params) => API.get("/dashboard/top-causes", { params }),
+  getDonorInsights: () => API.get("/dashboard/donor-insights"),
+  getPerformanceMetrics: () => API.get("/dashboard/performance-metrics"),
+};
+
 // Admin API
 export const adminAPI = {
   // Dashboard
