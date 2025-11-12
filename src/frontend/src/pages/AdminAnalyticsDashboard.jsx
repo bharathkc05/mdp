@@ -14,6 +14,13 @@ import {
 } from 'recharts';
 import { format, subDays, subMonths, startOfDay, endOfDay } from 'date-fns';
 import { dashboardAPI } from '../api';
+import {
+  formatAnalyticsForExport,
+  exportCausesSummary,
+  exportDonationTrends,
+  exportCategoryBreakdown,
+  exportTopCauses
+} from '../utils/csvExport';
 
 // WCAG 2.1 Level AA compliant color palette with sufficient contrast
 const CHART_COLORS = {
@@ -47,10 +54,26 @@ export default function AdminAnalyticsDashboard() {
   const [trendPeriod, setTrendPeriod] = useState('daily');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('currentAmount');
+  
+  // Export states (Story 4.3)
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     fetchAllAnalytics();
   }, [dateRange, trendPeriod, selectedCategory, sortBy]);
+
+  // Close export menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showExportMenu && !event.target.closest('.relative')) {
+        setShowExportMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showExportMenu]);
 
   const fetchAllAnalytics = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -83,6 +106,53 @@ export default function AdminAnalyticsDashboard() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  // Story 4.3: Export handlers
+  const handleExport = (exportType) => {
+    setExporting(true);
+    setShowExportMenu(false);
+    
+    try {
+      const analyticsData = {
+        aggregatedData,
+        trendData,
+        categoryData,
+        topCauses,
+        performanceMetrics
+      };
+      
+      const formattedData = formatAnalyticsForExport(analyticsData, dateRange);
+      
+      switch (exportType) {
+        case 'summary':
+          exportCausesSummary(formattedData.causesSummary, dateRange);
+          break;
+        case 'trends':
+          exportDonationTrends(formattedData.donationTrends, dateRange, trendPeriod);
+          break;
+        case 'categories':
+          exportCategoryBreakdown(formattedData.categories, dateRange);
+          break;
+        case 'top':
+          exportTopCauses(formattedData.topPerformers, dateRange);
+          break;
+        case 'all':
+          // Export all as separate files
+          exportCausesSummary(formattedData.causesSummary, dateRange);
+          setTimeout(() => exportDonationTrends(formattedData.donationTrends, dateRange, trendPeriod), 100);
+          setTimeout(() => exportCategoryBreakdown(formattedData.categories, dateRange), 200);
+          setTimeout(() => exportTopCauses(formattedData.topPerformers, dateRange), 300);
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      setError('Failed to export data. Please try again.');
+    } finally {
+      setTimeout(() => setExporting(false), 500);
     }
   };
 
@@ -148,6 +218,82 @@ export default function AdminAnalyticsDashboard() {
                 </svg>
                 Back
               </Link>
+              {/* Story 4.3: Export to CSV Button with Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  disabled={exporting || loading}
+                  className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                  aria-label="Export analytics data to CSV"
+                  aria-haspopup="true"
+                  aria-expanded={showExportMenu}
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  {exporting ? 'Exporting...' : 'Export CSV'}
+                </button>
+
+                {/* Export Dropdown Menu */}
+                {showExportMenu && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                    <div className="py-2">
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-700">Export Options</p>
+                        <p className="text-xs text-gray-500 mt-1">Date range: Last {dateRange} days</p>
+                      </div>
+                      <button
+                        onClick={() => handleExport('summary')}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors flex items-center"
+                      >
+                        <svg className="w-4 h-4 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="text-sm text-gray-700">Causes Summary</span>
+                      </button>
+                      <button
+                        onClick={() => handleExport('trends')}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors flex items-center"
+                      >
+                        <svg className="w-4 h-4 mr-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                        </svg>
+                        <span className="text-sm text-gray-700">Donation Trends</span>
+                      </button>
+                      <button
+                        onClick={() => handleExport('categories')}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors flex items-center"
+                      >
+                        <svg className="w-4 h-4 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                        </svg>
+                        <span className="text-sm text-gray-700">Category Breakdown</span>
+                      </button>
+                      <button
+                        onClick={() => handleExport('top')}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors flex items-center"
+                      >
+                        <svg className="w-4 h-4 mr-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span className="text-sm text-gray-700">Top Causes</span>
+                      </button>
+                      <div className="border-t border-gray-100 mt-2 pt-2">
+                        <button
+                          onClick={() => handleExport('all')}
+                          className="w-full text-left px-4 py-2 hover:bg-green-50 transition-colors flex items-center"
+                        >
+                          <svg className="w-4 h-4 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          <span className="text-sm font-semibold text-green-700">Export All Reports</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={() => fetchAllAnalytics(true)}
                 disabled={refreshing}
