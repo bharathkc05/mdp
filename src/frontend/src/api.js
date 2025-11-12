@@ -114,6 +114,11 @@ export const dashboardAPI = {
   getTopCauses: (params) => API.get("/dashboard/top-causes", { params }),
   getDonorInsights: () => API.get("/dashboard/donor-insights"),
   getPerformanceMetrics: () => API.get("/dashboard/performance-metrics"),
+  
+  // Story 3.4: Audit Logs API
+  getAuditLogs: (params) => API.get(`/admin/audit-logs?${params}`),
+  getAuditLogStats: () => API.get("/admin/audit-logs/stats"),
+  getAuditLog: (id) => API.get(`/admin/audit-logs/${id}`),
 };
 
 // Admin API

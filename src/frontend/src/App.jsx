@@ -14,6 +14,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminCauseDashboard from "./pages/AdminCauseDashboard";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminAnalyticsDashboard from "./pages/AdminAnalyticsDashboard";
+import AuditLogsPage from "./pages/AuditLogsPage";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -117,6 +118,14 @@ function App() {
               element={
                 <AdminRoute>
                   <AdminAnalyticsDashboard />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/audit-logs"
+              element={
+                <AdminRoute>
+                  <AuditLogsPage />
                 </AdminRoute>
               }
             />

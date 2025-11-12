@@ -5,6 +5,8 @@ import Cause from "../models/Cause.js";
 import User from "../models/User.js";
 import { protect } from "../middleware/auth.js";
 import { donationRateLimiter } from "../middleware/rateLimiter.js";
+// Story 3.4: Audit Logging
+import { logDonationCreated, logDonationFailed } from "../utils/auditLogger.js";
 
 const router = express.Router();
 
@@ -185,6 +187,15 @@ router.post('/', donationRateLimiter, async (req, res) => {
       await session.commitTransaction();
       console.log(`[Transaction Success] Donation recorded: ${recordedPaymentId}, User: ${req.user.email}, Cause: ${cause.name}, Amount: ${amount}`);
 
+      // Story 3.4: Log successful donation
+      await logDonationCreated(req, {
+        amount,
+        causeId: cause._id,
+        causeName: cause.name,
+        paymentId: recordedPaymentId,
+        paymentMethod: recordedPaymentMethod
+      });
+
       res.status(201).json({
         success: true,
         message: 'Donation successful! Thank you for your contribution.',
@@ -216,6 +227,14 @@ router.post('/', donationRateLimiter, async (req, res) => {
         paymentId: recordedPaymentId,
         amount,
         timestamp: new Date().toISOString()
+      });
+
+      // Story 3.4: Log failed donation
+      await logDonationFailed(req, {
+        amount,
+        causeId,
+        causeName: cause.name,
+        reason: transactionError.message
       });
 
       throw transactionError; // Re-throw to be caught by outer catch
