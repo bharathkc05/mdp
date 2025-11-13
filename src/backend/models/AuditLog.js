@@ -38,6 +38,8 @@ const auditLogSchema = new mongoose.Schema(
         'CAUSE_DELETED',
         'CAUSE_ARCHIVED',
         'USER_ROLE_CHANGED',
+        'PLATFORM_CONFIG_UPDATED',
+        'PLATFORM_CONFIG_VIEWED',
         'ADMIN_ACTION',
         'SYSTEM_EVENT'
       ]
@@ -78,7 +80,7 @@ const auditLogSchema = new mongoose.Schema(
     // Resource affected (e.g., cause ID, donation ID)
     resourceType: {
       type: String,
-      enum: ['USER', 'CAUSE', 'DONATION', 'SYSTEM'],
+      enum: ['USER', 'CAUSE', 'DONATION', 'CONFIG', 'SYSTEM'],
       required: false,
       default: undefined
     },
