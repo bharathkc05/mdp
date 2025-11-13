@@ -353,7 +353,13 @@ router.post('/login', loginRateLimiter, async (req, res) => {
     // Story 3.4: Log successful login
     await logLoginSuccess(req, user);
     
-    return res.json({ message: 'Login successful', token, role: user.role });
+    return res.json({ 
+      message: 'Login successful', 
+      token, 
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
