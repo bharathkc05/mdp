@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 
 export default function Navbar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [email, setEmail] = useState("");
+  const [userName, setUserName] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -11,11 +11,14 @@ export default function Navbar() {
   // Update auth state whenever location changes
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const userEmail = localStorage.getItem("email");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     
     setIsAuthenticated(!!token);
-    setEmail(userEmail || "");
+    // Use firstName, or fall back to email if name not available
+    const displayName = user.firstName 
+      ? `${user.firstName} ${user.lastName || ''}`.trim()
+      : user.email || "";
+    setUserName(displayName);
     setIsAdmin(user.role === "admin");
   }, [location]);
 
@@ -74,7 +77,7 @@ export default function Navbar() {
               )}
 
               <span className="text-sm text-blue-100 px-2">|</span>
-              <span className="text-sm">Welcome, {email}</span>
+              <span className="text-sm">Welcome, {userName}</span>
               
               {/* User Profile Link - navigates to /profile route */}
               <Link 
