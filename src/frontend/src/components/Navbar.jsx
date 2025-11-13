@@ -70,10 +70,9 @@ export default function Navbar() {
               <span className="text-sm text-blue-100 px-2">|</span>
               <span className="text-sm">Welcome, {email}</span>
               
-              {/* User Profile Link - navigates to /dashboard route */}
-              {/* Note: Route is "/dashboard" but labeled "Profile" for better UX */}
+              {/* User Profile Link - navigates to /profile route */}
               <Link 
-                to="/dashboard" 
+                to="/profile" 
                 className="px-3 py-1 bg-blue-500 rounded-md hover:bg-blue-700 transition-colors"
               >
                 Profile
