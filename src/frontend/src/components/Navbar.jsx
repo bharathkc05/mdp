@@ -55,7 +55,13 @@ export default function Navbar() {
               <Link to="/donate/multi" className="hover:text-blue-100 transition-colors">
                 Multi-Cause Donate
               </Link>
-              
+              {/* Donations: My Donations for users (admins access previous donations via Admin Dashboard) */}
+              {!isAdmin && (
+                <Link to="/donations" className="hover:text-blue-100 transition-colors">
+                  My Donations
+                </Link>
+              )}
+
               {/* Admin-Only Link */}
               {isAdmin && (
                 <Link 

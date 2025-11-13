@@ -363,6 +363,120 @@ router.get('/users/:id', async (req, res) => {
   }
 });
 
+// @route   GET /api/admin/previous-donations
+// @desc    Get all donations across users (admin view)
+// @access  Admin only
+router.get('/previous-donations', async (req, res) => {
+  try {
+    // Support filtering via query params: startDate, endDate, minAmount, maxAmount, donorName, paymentMethod, cause, status, sort
+    const {
+      startDate,
+      endDate,
+      minAmount,
+      maxAmount,
+      donorName,
+      paymentMethod,
+      cause,
+      status,
+      sort = '-date',
+      page = 1,
+      limit = 50,
+      export: exportType
+    } = req.query;
+
+    const match = {};
+
+    if (startDate || endDate) {
+      match['donations.date'] = {};
+      if (startDate) match['donations.date'].$gte = new Date(startDate);
+      if (endDate) match['donations.date'].$lte = new Date(endDate);
+    }
+
+    // Only add amount filters when values are provided (non-empty)
+    if ((minAmount !== undefined && String(minAmount).trim() !== '') || (maxAmount !== undefined && String(maxAmount).trim() !== '')) {
+      match['donations.amount'] = {};
+      if (minAmount !== undefined && String(minAmount).trim() !== '') match['donations.amount'].$gte = Number(minAmount);
+      if (maxAmount !== undefined && String(maxAmount).trim() !== '') match['donations.amount'].$lte = Number(maxAmount);
+      // If conversion produces NaN (bad input), remove the amount constraint entirely
+      if (isNaN(match['donations.amount'].$gte) && isNaN(match['donations.amount'].$lte)) {
+        delete match['donations.amount'];
+      }
+    }
+
+    if (paymentMethod) match['donations.paymentMethod'] = paymentMethod;
+    if (cause) match['donations.cause'] = cause;
+    if (status) match['donations.status'] = status;
+    if (donorName) {
+      // match either firstName or lastName or email
+      match.$or = [
+        { 'firstName': { $regex: donorName, $options: 'i' } },
+        { 'lastName': { $regex: donorName, $options: 'i' } },
+        { 'email': { $regex: donorName, $options: 'i' } }
+      ];
+    }
+
+    const pipeline = [
+      { $unwind: '$donations' },
+      { $match: match },
+      { $project: {
+        paymentId: '$donations.paymentId',
+        amount: '$donations.amount',
+        cause: '$donations.cause',
+        date: '$donations.date',
+        paymentMethod: '$donations.paymentMethod',
+        status: '$donations.status',
+        donorId: '$_id',
+        donorEmail: '$email',
+        donorName: { $concat: ['$firstName', ' ', '$lastName'] }
+      }}
+    ];
+
+    // Sorting
+    if (sort) {
+      const sortField = {};
+      const direction = sort.startsWith('-') ? -1 : 1;
+      const field = sort.replace(/^-/, '');
+      sortField[field] = direction;
+      pipeline.push({ $sort: sortField });
+    }
+
+    // If export=csv, produce CSV and send as attachment
+    if (exportType === 'csv') {
+      const results = await User.aggregate(pipeline).allowDiskUse(true);
+      // Build CSV
+      const headers = ['paymentId', 'amount', 'cause', 'date', 'paymentMethod', 'status', 'donorId', 'donorName', 'donorEmail'];
+      const rows = [headers.join(',')];
+      for (const r of results) {
+        const row = headers.map(h => {
+          let v = r[h];
+          if (v === undefined || v === null) return '';
+          if (h === 'date') v = new Date(v).toISOString();
+          // escape quotes
+          return `"${String(v).replace(/"/g, '""')}"`;
+        }).join(',');
+        rows.push(row);
+      }
+      const csv = rows.join('\n');
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="previous_donations_${Date.now()}.csv"`);
+      return res.send(csv);
+    }
+
+    // Pagination
+    const pageNum = Math.max(1, Number(page));
+    const limitNum = Math.min(1000, Number(limit) || 50);
+    const skip = (pageNum - 1) * limitNum;
+
+    pipeline.push({ $skip: skip }, { $limit: limitNum });
+
+    const donations = await User.aggregate(pipeline).allowDiskUse(true);
+    res.json({ success: true, count: donations.length, page: pageNum, data: donations });
+  } catch (error) {
+    console.error('Error fetching previous donations:', error);
+    res.status(500).json({ success: false, message: 'Server error while fetching previous donations' });
+  }
+});
+
 // @route   PUT /api/admin/users/:id/role
 // @desc    Update user role
 // @access  Admin only
@@ -494,3 +608,38 @@ router.post('/causes/update-expired', async (req, res) => {
 });
 
 export default router;
+
+// @route   GET /api/admin/donations/by-user
+// @desc    Aggregate donations grouped by user (admin only)
+// @access  Admin only
+router.get('/donations/by-user', async (req, res) => {
+  try {
+    // Aggregate per user: totalAmount, donationCount, lastDonationDate, avgDonation
+    const pipeline = [
+      { $match: { 'donations.0': { $exists: true } } },
+      { $project: {
+          _id: 1,
+          email: 1,
+          firstName: 1,
+          lastName: 1,
+          donations: 1
+      }},
+      { $project: {
+          donorId: '$_id',
+          donorName: { $concat: ['$firstName', ' ', '$lastName'] },
+          donorEmail: '$email',
+          totalAmount: { $sum: '$donations.amount' },
+          donationCount: { $size: '$donations' },
+          lastDonationDate: { $max: '$donations.date' },
+          avgDonation: { $avg: '$donations.amount' }
+      }},
+      { $sort: { totalAmount: -1 } }
+    ];
+
+    const results = await User.aggregate(pipeline).allowDiskUse(true);
+    res.json({ success: true, count: results.length, data: results });
+  } catch (error) {
+    console.error('Error aggregating donations by user:', error);
+    res.status(500).json({ success: false, message: 'Server error while aggregating donations by user' });
+  }
+});

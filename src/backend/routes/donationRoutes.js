@@ -8,6 +8,7 @@ import { protect } from "../middleware/auth.js";
 import { donationRateLimiter } from "../middleware/rateLimiter.js";
 // Story 3.4: Audit Logging
 import { logDonationCreated, logDonationFailed } from "../utils/auditLogger.js";
+import PDFDocument from 'pdfkit';
 
 const router = express.Router();
 
@@ -572,6 +573,68 @@ router.get('/categories', async (req, res) => {
       success: false,
       message: 'Server error while fetching categories' 
     });
+  }
+});
+
+// @route   GET /api/donate/receipt/:paymentId
+// @desc    Generate and download PDF receipt for a donation
+// @access  Authenticated users (donors) - admins can fetch any donation
+router.get('/receipt/:paymentId', async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+
+    let user;
+    let donation;
+
+    // If admin, allow fetching any user's donation by paymentId
+    if (req.user && req.user.role === 'admin') {
+      user = await User.findOne({ 'donations.paymentId': paymentId }).select('donations firstName lastName email');
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Donation not found' });
+      }
+      donation = user.donations.find(d => d.paymentId === paymentId);
+    } else {
+      user = await User.findById(req.user._id).select('donations firstName lastName email');
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      donation = user.donations.find(d => d.paymentId === paymentId);
+      if (!donation) {
+        return res.status(404).json({ success: false, message: 'Donation not found for this user' });
+      }
+    }
+
+    // Create PDF and stream to response
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="receipt_${paymentId}.pdf"`);
+
+    doc.pipe(res);
+
+    const donorName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+
+    doc.fontSize(20).text('Donation Receipt', { align: 'center' });
+    doc.moveDown();
+
+    doc.fontSize(12).text(`Donor: ${donorName}`);
+    doc.text(`Email: ${user.email}`);
+    doc.text(`Date: ${new Date(donation.date).toLocaleString()}`);
+    doc.text(`Payment ID: ${donation.paymentId}`);
+    doc.text(`Payment Method: ${donation.paymentMethod || 'N/A'}`);
+    doc.moveDown();
+
+    doc.text(`Cause: ${donation.cause}`);
+    doc.text(`Amount: ${Number(donation.amount).toFixed(2)}`);
+
+    doc.moveDown(2);
+    doc.text('Thank you for your contribution!', { align: 'center' });
+
+    doc.end();
+
+  } catch (error) {
+    console.error('Error generating receipt:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate receipt' });
   }
 });
 

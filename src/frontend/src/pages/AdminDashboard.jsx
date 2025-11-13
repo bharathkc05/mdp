@@ -319,6 +319,46 @@ export default function AdminDashboard() {
             </Link>
 
             <Link
+              to="/admin/previous-donations"
+              className="group bg-gradient-to-br from-teal-500 to-teal-600 p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-1 hover:scale-105"
+            >
+              <div className="flex items-center text-white">
+                <div className="bg-white bg-opacity-20 rounded-lg p-3 mr-4 group-hover:bg-opacity-30 transition-colors">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h4l3 6 4-12 3 6h4" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold">Previous Donations</h3>
+                  <p className="text-teal-100 text-sm mt-1">View and export donor contributions</p>
+                </div>
+                <svg className="w-6 h-6 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </Link>
+
+            <Link
+              to="/admin/donations-by-user"
+              className="group bg-gradient-to-br from-yellow-500 to-yellow-600 p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-1 hover:scale-105"
+            >
+              <div className="flex items-center text-white">
+                <div className="bg-white bg-opacity-20 rounded-lg p-3 mr-4 group-hover:bg-opacity-30 transition-colors">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h4l3 6 4-12 3 6h4" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold">Donations By User</h3>
+                  <p className="text-yellow-100 text-sm mt-1">View aggregated donor totals</p>
+                </div>
+                <svg className="w-6 h-6 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </Link>
+
+            <Link
               to="/admin/config"
               className="group bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-1 hover:scale-105"
             >
