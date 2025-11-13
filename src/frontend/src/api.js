@@ -88,7 +88,9 @@ export const authAPI = {
 // Donations API
 export const donationsAPI = {
   getDonations: () => API.get("/donate/history"),
+  getCauses: () => API.get("/donate/causes"),
   makeDonation: (data) => API.post("/donate", data),
+  downloadReceipt: (paymentId) => API.get(`/donate/receipt/${paymentId}`, { responseType: 'blob' }),
   getStats: () => API.get("/donate/stats"),
 };
 
@@ -138,6 +140,8 @@ export const adminAPI = {
   getUsers: () => API.get("/admin/users"),
   getUser: (id) => API.get(`/admin/users/${id}`),
   updateUserRole: (id, role) => API.put(`/admin/users/${id}/role`, { role }),
+  getPreviousDonations: (options) => API.get('/admin/previous-donations', options),
+  getDonationsByUser: () => API.get('/admin/donations/by-user'),
 };
 
 // Platform Configuration API (Story 2.6)

@@ -1,23 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { donationsAPI } from '../api';
 import { getMinimumDonation, formatCurrencySync } from '../utils/currencyFormatter';
-
-const causes = [
-  'Education',
-  'Healthcare',
-  'Environment',
-  'Animal Welfare',
-  'Disaster Relief',
-  'Poverty Alleviation'
-];
 
 export default function DonationForm() {
   const [form, setForm] = useState({
     amount: '',
     cause: '',
   });
+  const [causes, setCauses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [latestPaymentId, setLatestPaymentId] = useState('');
+  const [showClickToast, setShowClickToast] = useState(false);
+  const toastTimerRef = useRef(null);
   const [minDonation, setMinDonation] = useState({ amount: 1, enabled: true });
 
   useEffect(() => {
@@ -29,6 +25,19 @@ export default function DonationForm() {
         console.error('Failed to fetch minimum donation:', err);
       });
     };
+
+    // Fetch available causes (so we submit causeId)
+    const loadCauses = async () => {
+      try {
+        const res = await donationsAPI.getCauses();
+        const data = res?.data?.data || [];
+        setCauses(data);
+      } catch (err) {
+        console.error('Failed to load causes:', err);
+      }
+    };
+
+    loadCauses();
 
     loadConfig();
 
@@ -46,6 +55,21 @@ export default function DonationForm() {
     setLoading(true);
     setMessage({ type: '', text: '' });
 
+    // Only show immediate toast for non-admin users
+    let isAdmin = false;
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      isAdmin = user?.role === 'admin';
+    } catch (err) {
+      isAdmin = false;
+    }
+
+    if (!isAdmin) {
+      setShowClickToast(true);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = setTimeout(() => setShowClickToast(false), 3000);
+    }
+
     // Story 2.6: Client-side validation for minimum donation
     if (minDonation.enabled && parseFloat(form.amount) < minDonation.amount) {
       setMessage({
@@ -57,7 +81,14 @@ export default function DonationForm() {
     }
 
     try {
-      await donationsAPI.makeDonation(form);
+      // Ensure we send causeId and numeric amount as backend expects
+      const payload = { amount: Number(form.amount), causeId: form.cause };
+      const res = await donationsAPI.makeDonation(payload);
+      // Try several locations for payment id returned by backend
+      const paymentId = res?.data?.data?.donation?.paymentId || res?.data?.data?.paymentId || res?.data?.paymentId || '';
+      setLatestPaymentId(paymentId || '');
+      // Show the receipt modal only for non-admin users
+      if (!isAdmin) setShowReceiptModal(true);
       setMessage({
         type: 'success',
         text: 'Donation made successfully! Thank you for your contribution.'
@@ -71,6 +102,43 @@ export default function DonationForm() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const closeClickToast = () => {
+    setShowClickToast(false);
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+  };
+
+  const handleModalDownload = async () => {
+    if (!latestPaymentId) {
+      alert('Receipt not available');
+      return;
+    }
+    try {
+      const resp = await donationsAPI.downloadReceipt(latestPaymentId);
+      const blob = new Blob([resp.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipt_${latestPaymentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download receipt', err);
+      alert('Failed to download receipt');
+    }
+  };
+
+  const handleDonateMore = () => {
+    setShowReceiptModal(false);
+    // focus amount input if possible
+    const el = document.querySelector('input[type="number"]');
+    if (el) el.focus();
   };
 
   return (
@@ -106,8 +174,8 @@ export default function DonationForm() {
             onChange={(e) => setForm({ ...form, cause: e.target.value })}
           >
             <option value="">Select a cause</option>
-            {causes.map((cause) => (
-              <option key={cause} value={cause}>{cause}</option>
+            {causes.map((c) => (
+              <option key={c._id} value={c._id}>{c.name}</option>
             ))}
           </select>
         </div>
@@ -130,6 +198,36 @@ export default function DonationForm() {
           }`}
         >
           {message.text}
+        </div>
+      )}
+
+      {showClickToast && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className="relative bg-white border rounded shadow p-3 w-72">
+            <button onClick={closeClickToast} aria-label="Close" className="absolute top-1 right-2 text-gray-500 hover:text-gray-700">✕</button>
+            <div className="font-semibold">Processing donation...</div>
+            <div className="text-sm text-gray-600">Your donation is being processed. You will be notified shortly.</div>
+          </div>
+        </div>
+      )}
+
+      {showReceiptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black opacity-40" onClick={() => setShowReceiptModal(false)} />
+          <div className="bg-white rounded-lg shadow-lg z-10 max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold mb-2">Donation Successful</h3>
+            <p className="text-sm text-gray-700 mb-4">Thank you for your donation. You can download your receipt now or later from <strong>My Donations</strong>.</p>
+            <div className="flex gap-2 mb-3">
+              <button onClick={handleModalDownload} disabled={!latestPaymentId} className={`flex-1 px-4 py-2 text-white rounded ${latestPaymentId ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'}`}>
+                {latestPaymentId ? 'Download Receipt' : 'Receipt Not Ready'}
+              </button>
+              <button onClick={handleDonateMore} className="flex-1 px-4 py-2 border rounded">Donate More</button>
+            </div>
+            <div className="text-xs text-gray-500">You can also download this receipt later from your <a href="/donations" className="text-blue-600 underline">My Donations</a> page.</div>
+            <div className="mt-4 text-right">
+              <button onClick={() => setShowReceiptModal(false)} className="px-3 py-1 text-sm text-gray-600">Close</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

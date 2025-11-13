@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { configAPI } from '../api';
-import { invalidateConfigCache } from '../utils/currencyFormatter';
+import { formatCurrencySync, invalidateConfigCache, updateConfigCache } from '../utils/currencyFormatter';
 
 export default function AdminPlatformConfig() {
   const [config, setConfig] = useState(null);
@@ -88,17 +88,13 @@ export default function AdminPlatformConfig() {
       if (response.data.success) {
         setConfig(response.data.data);
         
-        // Invalidate the cached configuration so other components reload it
-        invalidateConfigCache();
-        
-        // Trigger a custom event to notify other components
-        window.dispatchEvent(new CustomEvent('platformConfigUpdated', { 
-          detail: response.data.data 
-        }));
+        // OPTIMIZED: Instantly update cache and notify all components
+        // This propagates changes immediately without components needing to re-fetch
+        updateConfigCache(response.data.data);
         
         setMessage({
           type: 'success',
-          text: 'Platform configuration updated successfully! All pages will use the new settings.'
+          text: 'Platform configuration updated successfully! Changes applied instantly across all pages.'
         });
       }
     } catch (error) {

@@ -18,6 +18,9 @@ import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminAnalyticsDashboard from "./pages/AdminAnalyticsDashboard";
 import AuditLogsPage from "./pages/AuditLogsPage";
 import AdminPlatformConfig from "./pages/AdminPlatformConfig";
+import AdminDonationsByUser from "./pages/AdminDonationsByUser";
+import MyDonations from "./pages/MyDonations";
+import AdminPreviousDonations from "./pages/AdminPreviousDonations";
 import { initializeCurrencyConfig } from "./utils/currencyFormatter";
 
 const ProtectedRoute = ({ children }) => {
@@ -113,6 +116,14 @@ function App() {
               }
             />
             <Route
+              path="/donations"
+              element={
+                <ProtectedRoute>
+                  <MyDonations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/admin"
               element={
                 <AdminRoute>
@@ -146,10 +157,26 @@ function App() {
               }
             />
             <Route
+              path="/admin/donations-by-user"
+              element={
+                <AdminRoute>
+                  <AdminDonationsByUser />
+                </AdminRoute>
+              }
+            />
+            <Route
               path="/admin/audit-logs"
               element={
                 <AdminRoute>
                   <AuditLogsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/previous-donations"
+              element={
+                <AdminRoute>
+                  <AdminPreviousDonations />
                 </AdminRoute>
               }
             />
