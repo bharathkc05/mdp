@@ -25,6 +25,7 @@ import {
   setSecurityHeaders 
 } from "./middleware/httpsEnforcer.js";
 import { generalRateLimiter } from "./middleware/rateLimiter.js";
+import { startCauseStatusUpdater, updateExpiredCauses } from "./utils/causeStatusUpdater.js";
 
 dotenv.config();
 
@@ -67,6 +68,14 @@ app.use(httpLogger);
 
 // Database connection
 connectDB();
+
+// Start the scheduled job to auto-complete expired causes
+startCauseStatusUpdater();
+
+// Run initial check for expired causes on startup
+updateExpiredCauses().catch(err => 
+  logger.error({ err }, 'Failed to run initial expired causes check')
+);
 
 // Normalize accidentally duplicated API prefixes (e.g. /api/auth/api/auth/verify)
 app.use((req, res, next) => {

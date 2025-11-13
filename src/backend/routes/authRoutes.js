@@ -370,10 +370,57 @@ router.get('/profile', protect, async (req, res) => {
       email: user.email,
       age: user.age,
       gender: user.gender,
-      role: user.role
+      role: user.role,
+      profile: user.profile,
+      twoFactorEnabled: user.twoFactorEnabled
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update Profile
+router.put('/profile', protect, async (req, res) => {
+  try {
+    const { firstName, lastName, age, gender, profile } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update basic fields if provided
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (age) user.age = age;
+    if (gender) user.gender = gender;
+
+    // Update profile fields if provided
+    if (profile) {
+      if (!user.profile) user.profile = {};
+      if (profile.phoneNumber !== undefined) user.profile.phoneNumber = profile.phoneNumber;
+      if (profile.address !== undefined) user.profile.address = profile.address;
+      if (profile.preferredCauses !== undefined) user.profile.preferredCauses = profile.preferredCauses;
+    }
+
+    await user.save();
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        age: user.age,
+        gender: user.gender,
+        role: user.role,
+        profile: user.profile,
+        twoFactorEnabled: user.twoFactorEnabled
+      }
+    });
+  } catch (err) {
+    console.error('Profile update error:', err);
+    res.status(500).json({ message: 'Server error while updating profile' });
   }
 });
 

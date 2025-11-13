@@ -139,6 +139,19 @@ export default function AdminCauseDashboard() {
   };
 
   const handleDeleteCause = async (id) => {
+    // Find the cause to check if it has donations
+    const cause = causes.find(c => c._id === id);
+    
+    // Check if cause has donations
+    if (cause && cause.currentAmount > 0) {
+      alert(
+        "Cannot delete this cause because it has received donations.\n\n" +
+        `Current donations: ₹${cause.currentAmount}\n\n` +
+        "Instead, you can mark it as 'Cancelled' to prevent new donations while preserving donation records."
+      );
+      return;
+    }
+    
     if (!confirm("Are you sure you want to delete this cause? This action cannot be undone.")) return;
     
     try {
@@ -402,9 +415,18 @@ export default function AdminCauseDashboard() {
                           </button>
                           <button
                             onClick={() => handleDeleteCause(cause._id)}
-                            className="text-red-600 hover:text-red-900 focus:outline-none focus:underline"
+                            className={`${
+                              cause.currentAmount > 0
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-red-600 hover:text-red-900 focus:outline-none focus:underline'
+                            }`}
                             aria-label={`Delete ${cause.name}`}
                             disabled={cause.currentAmount > 0}
+                            title={
+                              cause.currentAmount > 0
+                                ? 'Cannot delete causes with donations. Mark as cancelled instead.'
+                                : 'Delete this cause'
+                            }
                           >
                             Delete
                           </button>

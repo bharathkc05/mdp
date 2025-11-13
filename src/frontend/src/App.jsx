@@ -4,11 +4,13 @@ import Navbar from "./components/Navbar";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 import Verify from "./pages/Verify";
 import Home from "./pages/Home";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import BrowseCauses from "./pages/BrowseCauses";
+import CauseDetails from "./pages/CauseDetails";
 import MultiCauseDonation from "./pages/MultiCauseDonation";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCauseDashboard from "./pages/AdminCauseDashboard";
@@ -72,6 +74,12 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/causes" element={<BrowseCauses />} />
             <Route
+              path="/causes/:id"
+              element={
+                <CauseDetails />
+              }
+            />
+            <Route
               path="/donate/multi"
               element={
                 <ProtectedRoute>
@@ -85,6 +93,14 @@ function App() {
                 <ProtectedRoute>
                   {/* Note: /dashboard is the User Profile page - shows role-specific content */}
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />

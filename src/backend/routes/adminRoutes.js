@@ -2,6 +2,7 @@ import express from "express";
 import Cause from "../models/Cause.js";
 import User from "../models/User.js";
 import { protect, authorize } from "../middleware/auth.js";
+import { updateExpiredCauses } from "../utils/causeStatusUpdater.js";
 // Story 3.4: Audit Logging
 import { 
   logCauseCreated, 
@@ -466,6 +467,28 @@ router.get('/dashboard/stats', async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: 'Server error while fetching dashboard statistics' 
+    });
+  }
+});
+
+// @route   POST /api/admin/causes/update-expired
+// @desc    Manually trigger update of expired causes (for testing/immediate execution)
+// @access  Admin only
+router.post('/causes/update-expired', async (req, res) => {
+  try {
+    const result = await updateExpiredCauses();
+    
+    res.json({
+      success: true,
+      message: `Successfully updated ${result.modifiedCount} expired cause(s)`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Error updating expired causes:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while updating expired causes',
+      error: error.message
     });
   }
 });
