@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { adminAPI, systemAPI } from '../api';
+import { formatCurrencySync, invalidateConfigCache } from '../utils/currencyFormatter';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -9,6 +10,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [systemStatus, setSystemStatus] = useState({
     backend: 'checking',
     database: 'checking',
@@ -20,7 +22,18 @@ export default function AdminDashboard() {
     checkSystemHealth();
     // Check system health every 30 seconds
     const healthInterval = setInterval(checkSystemHealth, 30000);
-    return () => clearInterval(healthInterval);
+
+    // Listen for config updates
+    const handleConfigUpdate = () => {
+      invalidateConfigCache();
+      setRefreshKey(prev => prev + 1);
+    };
+
+    window.addEventListener('platformConfigUpdated', handleConfigUpdate);
+    return () => {
+      clearInterval(healthInterval);
+      window.removeEventListener('platformConfigUpdated', handleConfigUpdate);
+    };
   }, []);
 
   const checkSystemHealth = async () => {
@@ -171,7 +184,7 @@ export default function AdminDashboard() {
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total Donations</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">
-                  ${(stats?.donations?.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatCurrencySync(stats?.donations?.totalAmount || 0)}
                 </p>
                 <p className="text-xs text-gray-600 mt-2 font-medium">
                   <span className="text-purple-600">{stats?.donations?.totalDonors || 0}</span> unique donors
@@ -192,7 +205,7 @@ export default function AdminDashboard() {
                 <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Overall Progress</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">{fundingPercentage}%</p>
                 <p className="text-xs text-gray-600 mt-2">
-                  Target: <span className="font-semibold text-orange-600">${(stats?.donations?.targetAmount || 0).toLocaleString()}</span>
+                  Target: <span className="font-semibold text-orange-600">{formatCurrencySync(stats?.donations?.targetAmount || 0)}</span>
                 </p>
               </div>
               <div className="bg-gradient-to-br from-orange-400 to-orange-600 rounded-full p-4 shadow-lg">
@@ -306,8 +319,29 @@ export default function AdminDashboard() {
             </Link>
 
             <Link
-              to="/dashboard"
+              to="/admin/config"
               className="group bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-1 hover:scale-105"
+            >
+              <div className="flex items-center text-white">
+                <div className="bg-white bg-opacity-20 rounded-lg p-3 mr-4 group-hover:bg-opacity-30 transition-colors">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold">Platform Config</h3>
+                  <p className="text-orange-100 text-sm mt-1">Minimum donation & currency</p>
+                </div>
+                <svg className="w-6 h-6 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </Link>
+
+            <Link
+              to="/dashboard"
+              className="group bg-gradient-to-br from-pink-500 to-pink-600 p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-1 hover:scale-105"
             >
               <div className="flex items-center text-white">
                 <div className="bg-white bg-opacity-20 rounded-lg p-3 mr-4 group-hover:bg-opacity-30 transition-colors">
@@ -317,7 +351,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold">2FA Settings</h3>
-                  <p className="text-orange-100 text-sm mt-1">Two-factor authentication</p>
+                  <p className="text-pink-100 text-sm mt-1">Two-factor authentication</p>
                 </div>
                 <svg className="w-6 h-6 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
@@ -364,8 +398,8 @@ export default function AdminDashboard() {
                   </p>
                   <div>
                     <div className="flex items-center justify-between text-xs text-gray-700 font-medium mb-1">
-                      <span>${cause.currentAmount?.toLocaleString() || 0} raised</span>
-                      <span>{cause.percentageAchieved || 0}% of ${cause.targetAmount?.toLocaleString() || 0}</span>
+                      <span>{formatCurrencySync(cause.currentAmount || 0)} raised</span>
+                      <span>{cause.percentageAchieved || 0}% of {formatCurrencySync(cause.targetAmount || 0)}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                       <div 

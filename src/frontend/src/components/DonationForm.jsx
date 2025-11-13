@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { donationsAPI } from '../api';
+import { getMinimumDonation, formatCurrencySync } from '../utils/currencyFormatter';
 
 const causes = [
   'Education',
@@ -17,11 +18,43 @@ export default function DonationForm() {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [minDonation, setMinDonation] = useState({ amount: 1, enabled: true });
+
+  useEffect(() => {
+    // Story 2.6: Fetch minimum donation configuration
+    const loadConfig = () => {
+      getMinimumDonation().then(config => {
+        setMinDonation(config);
+      }).catch(err => {
+        console.error('Failed to fetch minimum donation:', err);
+      });
+    };
+
+    loadConfig();
+
+    // Listen for config updates
+    const handleConfigUpdate = () => {
+      loadConfig();
+    };
+
+    window.addEventListener('platformConfigUpdated', handleConfigUpdate);
+    return () => window.removeEventListener('platformConfigUpdated', handleConfigUpdate);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage({ type: '', text: '' });
+
+    // Story 2.6: Client-side validation for minimum donation
+    if (minDonation.enabled && parseFloat(form.amount) < minDonation.amount) {
+      setMessage({
+        type: 'error',
+        text: `Donation amount must be at least ${formatCurrencySync(minDonation.amount)}`
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
       await donationsAPI.makeDonation(form);
@@ -49,14 +82,19 @@ export default function DonationForm() {
           <label className="block text-sm font-medium text-gray-700">Amount</label>
           <input
             type="number"
-            min="1"
+            min={minDonation.enabled ? minDonation.amount : 0.01}
             step="0.01"
             required
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             value={form.amount}
             onChange={(e) => setForm({ ...form, amount: e.target.value })}
-            placeholder="Enter amount"
+            placeholder={minDonation.enabled ? `Min: ${formatCurrencySync(minDonation.amount)}` : "Enter amount"}
           />
+          {minDonation.enabled && (
+            <p className="mt-1 text-sm text-gray-500">
+              Minimum donation: {formatCurrencySync(minDonation.amount)}
+            </p>
+          )}
         </div>
 
         <div>

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { formatCurrencySync } from '../utils/currencyFormatter';
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -197,7 +198,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div className="text-white">
-              <div className="text-5xl font-bold mb-2">₹{(stats.totalDonations / 1000).toFixed(0)}K+</div>
+              <div className="text-5xl font-bold mb-2">{formatCurrencySync(Math.round(stats.totalDonations / 1000))}K+</div>
               <div className="text-blue-100 text-lg">Total Donations</div>
             </div>
             <div className="text-white">
@@ -353,7 +354,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Micro-Donations</h3>
-                    <p className="text-gray-600">Every amount counts - start making a difference with as little as ₹10</p>
+                    <p className="text-gray-600">Every amount counts - start making a difference with as little as {formatCurrencySync(10)}</p>
                   </div>
                 </div>
 
@@ -377,7 +378,7 @@ export default function Home() {
                 <div className="space-y-6">
                   <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white">
                     <div className="text-sm font-semibold mb-2">Your Impact This Month</div>
-                    <div className="text-4xl font-bold mb-1">₹2,500</div>
+                    <div className="text-4xl font-bold mb-1">{formatCurrencySync(2500)}</div>
                     <div className="text-blue-100 text-sm">Donated to 5 causes</div>
                   </div>
                   
@@ -385,7 +386,7 @@ export default function Home() {
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <span className="font-semibold text-gray-900">Education</span>
-                        <span className="text-blue-600 font-bold">₹800</span>
+                        <span className="text-blue-600 font-bold">{formatCurrencySync(800)}</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full" style={{ width: '32%' }}></div>
@@ -395,7 +396,7 @@ export default function Home() {
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <span className="font-semibold text-gray-900">Healthcare</span>
-                        <span className="text-red-600 font-bold">₹700</span>
+                        <span className="text-red-600 font-bold">{formatCurrencySync(700)}</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div className="bg-gradient-to-r from-red-500 to-pink-600 h-2 rounded-full" style={{ width: '28%' }}></div>
@@ -405,7 +406,7 @@ export default function Home() {
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <span className="font-semibold text-gray-900">Environment</span>
-                        <span className="text-green-600 font-bold">₹1,000</span>
+                        <span className="text-green-600 font-bold">{formatCurrencySync(1000)}</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div className="bg-gradient-to-r from-green-500 to-emerald-600 h-2 rounded-full" style={{ width: '40%' }}></div>

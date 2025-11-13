@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API } from '../api';
+import { getMinimumDonation, formatCurrencySync } from '../utils/currencyFormatter';
 
 export default function MultiCauseDonation() {
   const navigate = useNavigate();
@@ -15,10 +16,30 @@ export default function MultiCauseDonation() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
+  const [minDonation, setMinDonation] = useState({ amount: 1, enabled: true });
   
   // Fetch active causes on mount
   useEffect(() => {
     fetchCauses();
+    
+    // Story 2.6: Fetch minimum donation configuration
+    const loadConfig = () => {
+      getMinimumDonation().then(config => {
+        setMinDonation(config);
+      }).catch(err => {
+        console.error('Failed to fetch minimum donation:', err);
+      });
+    };
+
+    loadConfig();
+
+    // Listen for config updates
+    const handleConfigUpdate = () => {
+      loadConfig();
+    };
+
+    window.addEventListener('platformConfigUpdated', handleConfigUpdate);
+    return () => window.removeEventListener('platformConfigUpdated', handleConfigUpdate);
   }, []);
   
   const fetchCauses = async () => {
@@ -194,6 +215,11 @@ export default function MultiCauseDonation() {
     if (!totalAmount || totalAmount <= 0) {
       errors.totalAmount = 'Please enter a total donation amount greater than 0';
     }
+
+    // Story 2.6: Client-side validation for minimum donation
+    if (minDonation.enabled && parseFloat(totalAmount) < minDonation.amount) {
+      errors.totalAmount = `Total donation amount must be at least ${formatCurrencySync(minDonation.amount)}`;
+    }
     
     if (basket.length === 0) {
       errors.basket = 'Please add at least one cause to your donation basket';
@@ -266,14 +292,6 @@ export default function MultiCauseDonation() {
     } finally {
       setSubmitting(false);
     }
-  };
-  
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(amount);
   };
   
   const getCategoryLabel = (category) => {
@@ -425,10 +443,10 @@ export default function MultiCauseDonation() {
                           </div>
                           <div className="flex justify-between mt-2">
                             <p className="text-xs text-gray-600">
-                              <span className="font-semibold text-blue-900">₹{(cause.currentAmount || 0).toLocaleString()}</span> raised
+                              <span className="font-semibold text-blue-900">{formatCurrencySync(cause.currentAmount || 0)}</span> raised
                             </p>
                             <p className="text-xs text-gray-600">
-                              of <span className="font-semibold text-purple-900">₹{(cause.targetAmount || 0).toLocaleString()}</span>
+                              of <span className="font-semibold text-purple-900">{formatCurrencySync(cause.targetAmount || 0)}</span>
                             </p>
                           </div>
                         </div>
@@ -485,23 +503,28 @@ export default function MultiCauseDonation() {
                   htmlFor="total-amount" 
                   className="block text-sm font-semibold text-gray-700 mb-2"
                 >
-                  Total Donation Amount (₹) *
+                  Total Donation Amount *
                 </label>
                 <input
                   id="total-amount"
                   type="number"
-                  min="1"
+                  min={minDonation.enabled ? minDonation.amount : 0.01}
                   step="0.01"
                   value={totalAmount}
                   onChange={(e) => handleTotalAmountChange(e.target.value)}
                   className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg ${
                     validationErrors.totalAmount ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="Enter total amount"
+                  placeholder={minDonation.enabled ? `Min: ${formatCurrencySync(minDonation.amount)}` : "Enter total amount"}
                   aria-required="true"
                   aria-invalid={!!validationErrors.totalAmount}
                   aria-describedby={validationErrors.totalAmount ? "total-amount-error" : undefined}
                 />
+                {minDonation.enabled && !validationErrors.totalAmount && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    Minimum donation: {formatCurrencySync(minDonation.amount)}
+                  </p>
+                )}
                 {validationErrors.totalAmount && (
                   <p id="total-amount-error" className="mt-2 text-sm text-red-600 flex items-center">
                     <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -630,7 +653,7 @@ export default function MultiCauseDonation() {
                               htmlFor={`allocation-${item._id}`}
                               className="block text-xs font-semibold text-gray-700 mb-2"
                             >
-                              {allocationType === 'percentage' ? 'Percentage (%)' : 'Amount (₹)'}
+                              {allocationType === 'percentage' ? 'Percentage (%)' : `Amount (${formatCurrencySync(0).replace(/[0-9.,]/g, '').trim()})`}
                             </label>
                             <input
                               id={`allocation-${item._id}`}
@@ -647,7 +670,7 @@ export default function MultiCauseDonation() {
                           
                           <div className="flex justify-between p-2 bg-blue-50 rounded-md">
                             <span className="text-xs font-semibold text-blue-900">{item.percentage.toFixed(2)}%</span>
-                            <span className="text-xs font-semibold text-blue-900">₹{item.amount.toFixed(2)}</span>
+                            <span className="text-xs font-semibold text-blue-900">{formatCurrencySync(item.amount)}</span>
                           </div>
                         </div>
                       </div>
@@ -691,7 +714,7 @@ export default function MultiCauseDonation() {
                     <div className="flex justify-between p-2 bg-white rounded">
                       <span className="text-gray-600 font-medium">Total Amount:</span>
                       <span className={`font-bold ${Math.abs(totalAllocatedAmount - (parseFloat(totalAmount) || 0)) > 0.01 ? 'text-red-600' : 'text-green-600'}`}>
-                        ₹{totalAllocatedAmount.toFixed(2)}
+                        {formatCurrencySync(totalAllocatedAmount)}
                       </span>
                     </div>
                   </div>
@@ -739,7 +762,7 @@ export default function MultiCauseDonation() {
                     <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Donate ₹{totalAmount || '0'}
+                    Donate {formatCurrencySync(parseFloat(totalAmount) || 0)}
                   </>
                 )}
               </button>

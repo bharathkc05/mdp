@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminAPI } from "../api";
+import { formatCurrencySync, invalidateConfigCache } from '../utils/currencyFormatter';
 
 export default function AdminCauseDashboard() {
   const navigate = useNavigate();
@@ -57,6 +58,18 @@ export default function AdminCauseDashboard() {
   useEffect(() => {
     fetchCauses();
   }, [currentPage, searchTerm, categoryFilter, statusFilter]);
+
+  // Listen for currency config updates
+  useEffect(() => {
+    const handleConfigUpdate = () => {
+      invalidateConfigCache();
+      // Force re-render by refetching causes
+      fetchCauses();
+    };
+
+    window.addEventListener('platformConfigUpdated', handleConfigUpdate);
+    return () => window.removeEventListener('platformConfigUpdated', handleConfigUpdate);
+  }, []);
 
   const fetchCauses = async () => {
     try {
@@ -146,7 +159,7 @@ export default function AdminCauseDashboard() {
     if (cause && cause.currentAmount > 0) {
       alert(
         "Cannot delete this cause because it has received donations.\n\n" +
-        `Current donations: ₹${cause.currentAmount}\n\n` +
+        `Current donations: ${formatCurrencySync(cause.currentAmount)}\n\n` +
         "Instead, you can mark it as 'Cancelled' to prevent new donations while preserving donation records."
       );
       return;
@@ -185,14 +198,6 @@ export default function AdminCauseDashboard() {
       imageUrl: "",
       endDate: ""
     });
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(amount);
   };
 
   const formatDate = (date) => {
@@ -373,10 +378,10 @@ export default function AdminCauseDashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {formatCurrency(cause.currentAmount)}
+                          {formatCurrencySync(cause.currentAmount)}
                         </div>
                         <div className="text-xs text-gray-500">
-                          of {formatCurrency(cause.targetAmount)}
+                          of {formatCurrencySync(cause.targetAmount)}
                         </div>
                         <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
                           <div
@@ -582,7 +587,7 @@ export default function AdminCauseDashboard() {
 
                     <div>
                       <label htmlFor="create-target" className="block text-sm font-medium text-gray-700">
-                        Target Amount (₹) *
+                        Target Amount ({formatCurrencySync(0).replace(/[0-9.,]/g, '').trim()}) *
                       </label>
                       <input
                         type="number"
@@ -708,7 +713,7 @@ export default function AdminCauseDashboard() {
 
                     <div>
                       <label htmlFor="edit-target" className="block text-sm font-medium text-gray-700">
-                        Target Amount (₹) *
+                        Target Amount ({formatCurrencySync(0).replace(/[0-9.,]/g, '').trim()}) *
                       </label>
                       <input
                         type="number"
