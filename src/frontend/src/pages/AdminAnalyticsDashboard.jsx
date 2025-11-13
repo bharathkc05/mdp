@@ -21,6 +21,7 @@ import {
   exportCategoryBreakdown,
   exportTopCauses
 } from '../utils/csvExport';
+import { formatCurrencySync, invalidateConfigCache } from '../utils/currencyFormatter';
 
 // WCAG 2.1 Level AA compliant color palette with sufficient contrast
 const CHART_COLORS = {
@@ -41,6 +42,7 @@ export default function AdminAnalyticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   
   // Data states
   const [aggregatedData, setAggregatedData] = useState(null);
@@ -61,6 +63,15 @@ export default function AdminAnalyticsDashboard() {
 
   useEffect(() => {
     fetchAllAnalytics();
+
+    // Listen for config updates
+    const handleConfigUpdate = () => {
+      invalidateConfigCache();
+      setRefreshKey(prev => prev + 1);
+    };
+
+    window.addEventListener('platformConfigUpdated', handleConfigUpdate);
+    return () => window.removeEventListener('platformConfigUpdated', handleConfigUpdate);
   }, [dateRange, trendPeriod, selectedCategory, sortBy]);
 
   // Close export menu when clicking outside
@@ -170,7 +181,7 @@ export default function AdminAnalyticsDashboard() {
             <p key={index} className="text-sm" style={{ color: entry.color }}>
               <span className="font-medium">{entry.name}:</span>{' '}
               {typeof entry.value === 'number' && entry.name.toLowerCase().includes('amount')
-                ? `$${entry.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                ? formatCurrencySync(entry.value)
                 : entry.value.toLocaleString()}
             </p>
           ))}
@@ -421,7 +432,7 @@ export default function AdminAnalyticsDashboard() {
             <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
               <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total Raised</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
-                ${(performanceMetrics.donations?.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {formatCurrencySync(performanceMetrics.donations?.totalAmount || 0)}
               </p>
               <p className="text-xs text-gray-600 mt-2">
                 From {performanceMetrics.donations?.totalDonations || 0} donations
@@ -441,7 +452,7 @@ export default function AdminAnalyticsDashboard() {
             <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
               <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Average Donation</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
-                ${(performanceMetrics.donations?.averageDonation || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {formatCurrencySync(performanceMetrics.donations?.averageDonation || 0)}
               </p>
               <p className="text-xs text-gray-600 mt-2">Per transaction</p>
             </div>
@@ -470,7 +481,7 @@ export default function AdminAnalyticsDashboard() {
             <p className="text-sm text-gray-600 mt-1">
               {/* AC4: Text alternative for data visualizations */}
               {trendData.length > 0 && (
-                <span role="img" aria-label={`Showing ${trendData.length} data points. Total amount: $${trendData.reduce((sum, d) => sum + (d.totalAmount || 0), 0).toLocaleString()}`}>
+                <span role="img" aria-label={`Showing ${trendData.length} data points. Total amount: ${formatCurrencySync(trendData.reduce((sum, d) => sum + (d.totalAmount || 0), 0))}`}>
                   Displaying {trendPeriod} donation trends for the last {dateRange} days
                 </span>
               )}
@@ -552,7 +563,7 @@ export default function AdminAnalyticsDashboard() {
               <p className="text-sm text-gray-600 mt-1">
                 {/* AC4: Text alternative */}
                 {categoryData.length > 0 && (
-                  <span role="img" aria-label={`${categoryData.length} categories. Top category: ${categoryData[0]?.category || 'N/A'} with $${categoryData[0]?.totalDonations?.toLocaleString() || 0}`}>
+                  <span role="img" aria-label={`${categoryData.length} categories. Top category: ${categoryData[0]?.category || 'N/A'} with ${formatCurrencySync(categoryData[0]?.totalDonations || 0)}`}>
                     Distribution of donations across {categoryData.length} categories
                   </span>
                 )}
@@ -610,7 +621,7 @@ export default function AdminAnalyticsDashboard() {
               <p className="text-sm text-gray-600 mt-1">
                 {/* AC4: Text alternative */}
                 {topCauses.length > 0 && (
-                  <span role="img" aria-label={`Top ${topCauses.length} causes. Highest: ${topCauses[0]?.name || 'N/A'} with $${topCauses[0]?.currentAmount?.toLocaleString() || 0}`}>
+                  <span role="img" aria-label={`Top ${topCauses.length} causes. Highest: ${topCauses[0]?.name || 'N/A'} with ${formatCurrencySync(topCauses[0]?.currentAmount || 0)}`}>
                     Causes ranked by total amount raised
                   </span>
                 )}
@@ -693,7 +704,7 @@ export default function AdminAnalyticsDashboard() {
                         </div>
                       </td>
                       <td className="text-right py-3 px-4 font-semibold text-gray-900">
-                        ${cat.totalDonations.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        {formatCurrencySync(cat.totalDonations)}
                       </td>
                       <td className="text-right py-3 px-4 text-gray-600">
                         {cat.totalCauses} ({cat.activeCauses} active)

@@ -317,6 +317,18 @@ export const logAdminAction = async (req, action, details) => {
   });
 };
 
+// Platform Configuration Updated
+export const logConfigUpdated = async (userId, updates) => {
+  await createAuditLog({
+    eventType: 'PLATFORM_CONFIG_UPDATED',
+    description: `Platform configuration updated by admin`,
+    userId,
+    severity: 'INFO',
+    metadata: { updates },
+    resourceType: 'CONFIG'
+  });
+};
+
 export default {
   createAuditLog,
   logUserRegistration,
@@ -332,5 +344,6 @@ export default {
   logCauseDeleted,
   logCauseArchived,
   logUserRoleChanged,
-  logAdminAction
+  logAdminAction,
+  logConfigUpdated
 };

@@ -13,6 +13,7 @@ import healthRoutes from "./routes/healthRoutes.js";
 import causeRoutes from "./routes/causeRoutes.js";
 import twoFactorRoutes from "./routes/twoFactorRoutes.js";
 import auditLogRoutes from "./routes/auditLogRoutes.js";
+import configRoutes from "./routes/configRoutes.js";
 import { 
   errorHandler, 
   notFoundHandler,
@@ -96,6 +97,7 @@ app.use("/api/donate", donationRoutes);
 app.use("/api/dashboard", dashboardRoutes); // Story 4.1: Backend Aggregation Dashboard
 app.use("/api/2fa", twoFactorRoutes); // Story 1.5: Two-Factor Authentication for Admins
 app.use("/api/admin/audit-logs", auditLogRoutes); // Story 3.4: View System Audit Logs
+app.use("/api/config", configRoutes); // Story 2.6: Platform Configuration
 
 // Story 5.5: System Health Check Endpoint (public endpoint, no authentication required)
 app.use("/health", healthRoutes);

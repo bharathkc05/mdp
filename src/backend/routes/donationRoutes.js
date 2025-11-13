@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import Cause from "../models/Cause.js";
 import User from "../models/User.js";
+import PlatformConfig from "../models/PlatformConfig.js";
 import { protect } from "../middleware/auth.js";
 import { donationRateLimiter } from "../middleware/rateLimiter.js";
 // Story 3.4: Audit Logging
@@ -103,6 +104,15 @@ router.post('/', donationRateLimiter, async (req, res) => {
       return res.status(400).json({ 
         success: false,
         message: 'Donation amount must be greater than 0' 
+      });
+    }
+
+    // Story 2.6: Validate minimum donation amount
+    const platformConfig = await PlatformConfig.getConfig();
+    if (platformConfig.minimumDonation.enabled && amount < platformConfig.minimumDonation.amount) {
+      return res.status(400).json({ 
+        success: false,
+        message: `Donation amount must be at least ${platformConfig.currency.symbol}${platformConfig.minimumDonation.amount}` 
       });
     }
 
@@ -277,6 +287,15 @@ router.post('/multi', donationRateLimiter, async (req, res) => {
       return res.status(400).json({ 
         success: false,
         message: 'Total donation amount must be greater than 0' 
+      });
+    }
+
+    // Story 2.6: Validate minimum donation amount for total
+    const platformConfig = await PlatformConfig.getConfig();
+    if (platformConfig.minimumDonation.enabled && totalAmount < platformConfig.minimumDonation.amount) {
+      return res.status(400).json({ 
+        success: false,
+        message: `Total donation amount must be at least ${platformConfig.currency.symbol}${platformConfig.minimumDonation.amount}` 
       });
     }
 

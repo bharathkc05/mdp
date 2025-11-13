@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { donationsAPI } from '../api';
+import { formatCurrencySync, getMinimumDonation, invalidateConfigCache } from '../utils/currencyFormatter';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -14,9 +15,32 @@ export default function CauseDetails() {
   const [donating, setDonating] = useState(false);
   const [donationAmount, setDonationAmount] = useState('');
   const [donationMessage, setDonationMessage] = useState({ type: '', text: '' });
+  const [minDonation, setMinDonation] = useState({ amount: 1, enabled: true });
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     fetchCauseDetails();
+
+    // Load minimum donation config
+    const loadConfig = () => {
+      getMinimumDonation().then(config => {
+        setMinDonation(config);
+      }).catch(err => {
+        console.error('Failed to fetch minimum donation:', err);
+      });
+    };
+
+    loadConfig();
+
+    // Listen for config updates
+    const handleConfigUpdate = () => {
+      invalidateConfigCache();
+      loadConfig();
+      setRefreshKey(prev => prev + 1);
+    };
+
+    window.addEventListener('platformConfigUpdated', handleConfigUpdate);
+    return () => window.removeEventListener('platformConfigUpdated', handleConfigUpdate);
   }, [id]);
 
   const fetchCauseDetails = async () => {
@@ -55,6 +79,15 @@ export default function CauseDetails() {
       return;
     }
 
+    // Validate minimum donation
+    if (minDonation.enabled && parseFloat(donationAmount) < minDonation.amount) {
+      setDonationMessage({ 
+        type: 'error', 
+        text: `Donation amount must be at least ${formatCurrencySync(minDonation.amount)}` 
+      });
+      return;
+    }
+
     setDonating(true);
     setDonationMessage({ type: '', text: '' });
 
@@ -67,7 +100,7 @@ export default function CauseDetails() {
 
       setDonationMessage({ 
         type: 'success', 
-        text: `Thank you for your donation of ₹${parseFloat(donationAmount).toFixed(2)} to ${cause.name}!` 
+        text: `Thank you for your donation of ${formatCurrencySync(parseFloat(donationAmount))} to ${cause.name}!` 
       });
       
       setDonationAmount('');
@@ -195,11 +228,11 @@ export default function CauseDetails() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <div className="bg-blue-50 p-4 rounded-lg">
                 <p className="text-sm text-blue-600 font-medium mb-1">Amount Raised</p>
-                <p className="text-2xl font-bold text-blue-900">₹{cause.currentAmount.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-blue-900">{formatCurrencySync(cause.currentAmount)}</p>
               </div>
               <div className="bg-purple-50 p-4 rounded-lg">
                 <p className="text-sm text-purple-600 font-medium mb-1">Target Amount</p>
-                <p className="text-2xl font-bold text-purple-900">₹{cause.targetAmount.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-purple-900">{formatCurrencySync(cause.targetAmount)}</p>
               </div>
               <div className="bg-green-50 p-4 rounded-lg">
                 <p className="text-sm text-green-600 font-medium mb-1">Donors</p>
@@ -225,19 +258,24 @@ export default function CauseDetails() {
                 <form onSubmit={handleDonation}>
                   <div className="mb-4">
                     <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
-                      Donation Amount (₹)
+                      Donation Amount
                     </label>
                     <input
                       type="number"
                       id="amount"
                       value={donationAmount}
                       onChange={(e) => setDonationAmount(e.target.value)}
-                      min="1"
+                      min={minDonation.enabled ? minDonation.amount : 0.01}
                       step="0.01"
-                      placeholder="Enter amount"
+                      placeholder={minDonation.enabled ? `Min: ${formatCurrencySync(minDonation.amount)}` : "Enter amount"}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
                       required
                     />
+                    {minDonation.enabled && (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Minimum donation: {formatCurrencySync(minDonation.amount)}
+                      </p>
+                    )}
                   </div>
 
                   {/* Quick Amount Buttons */}
@@ -251,7 +289,7 @@ export default function CauseDetails() {
                           onClick={() => setDonationAmount(amount.toString())}
                           className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
                         >
-                          ₹{amount}
+                          {formatCurrencySync(amount)}
                         </button>
                       ))}
                     </div>

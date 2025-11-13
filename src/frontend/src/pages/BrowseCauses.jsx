@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { API } from '../api';
+import { formatCurrencySync, invalidateConfigCache } from '../utils/currencyFormatter';
 
 export default function BrowseCauses() {
   const [causes, setCauses] = useState([]);
@@ -8,6 +9,7 @@ export default function BrowseCauses() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,6 +19,15 @@ export default function BrowseCauses() {
   useEffect(() => {
     fetchCategories();
     fetchCauses();
+
+    // Listen for config updates
+    const handleConfigUpdate = () => {
+      invalidateConfigCache();
+      setRefreshKey(prev => prev + 1);
+    };
+
+    window.addEventListener('platformConfigUpdated', handleConfigUpdate);
+    return () => window.removeEventListener('platformConfigUpdated', handleConfigUpdate);
   }, []);
   
   // Apply filters whenever search term or category changes
@@ -89,11 +100,7 @@ export default function BrowseCauses() {
   };
   
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(amount);
+    return formatCurrencySync(amount);
   };
   
   const getCategoryLabel = (category) => {

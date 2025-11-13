@@ -140,6 +140,13 @@ export const adminAPI = {
   updateUserRole: (id, role) => API.put(`/admin/users/${id}/role`, { role }),
 };
 
+// Platform Configuration API (Story 2.6)
+export const configAPI = {
+  getConfig: () => API.get("/config"),
+  updateConfig: (data) => API.put("/config", data),
+  getCurrencyPresets: () => API.get("/config/currency-presets"),
+};
+
 
 
 

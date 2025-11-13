@@ -17,6 +17,8 @@ import AdminCauseDashboard from "./pages/AdminCauseDashboard";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminAnalyticsDashboard from "./pages/AdminAnalyticsDashboard";
 import AuditLogsPage from "./pages/AuditLogsPage";
+import AdminPlatformConfig from "./pages/AdminPlatformConfig";
+import { initializeCurrencyConfig } from "./utils/currencyFormatter";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -47,6 +49,12 @@ function App() {
   useEffect(() => {
     // Check if token exists and is valid
     const token = localStorage.getItem("token");
+    
+    // Story 2.6: Initialize currency configuration
+    initializeCurrencyConfig().catch(err => 
+      console.error('Failed to load currency config:', err)
+    );
+    
     if (!token) {
       setIsLoading(false);
       return;
@@ -142,6 +150,14 @@ function App() {
               element={
                 <AdminRoute>
                   <AuditLogsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/config"
+              element={
+                <AdminRoute>
+                  <AdminPlatformConfig />
                 </AdminRoute>
               }
             />

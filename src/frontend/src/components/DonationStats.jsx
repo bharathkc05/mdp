@@ -1,14 +1,25 @@
 import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { donationsAPI } from '../api';
+import { formatCurrencySync, invalidateConfigCache } from '../utils/currencyFormatter';
 
 export default function DonationStats() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     fetchStats();
+
+    // Listen for config updates and force re-render
+    const handleConfigUpdate = () => {
+      invalidateConfigCache();
+      setRefreshKey(prev => prev + 1);
+    };
+
+    window.addEventListener('platformConfigUpdated', handleConfigUpdate);
+    return () => window.removeEventListener('platformConfigUpdated', handleConfigUpdate);
   }, []);
 
   const fetchStats = async () => {
@@ -58,7 +69,7 @@ export default function DonationStats() {
         <div className="bg-white border border-gray-300 rounded-lg p-3 shadow-lg" role="tooltip">
           <p className="font-semibold text-gray-900">{data.name}</p>
           <p className="text-sm text-gray-600">
-            Amount: ₹{data.value.toFixed(2)}
+            Amount: {formatCurrencySync(data.value)}
           </p>
           <p className="text-sm text-gray-600">
             Donations: {data.count}
@@ -77,7 +88,7 @@ export default function DonationStats() {
         <div className="bg-blue-50 p-4 rounded-lg">
           <p className="text-sm text-blue-600 font-medium">Total Donated</p>
           <p className="text-2xl font-bold text-blue-800">
-            ₹{totalDonated.toFixed(2)}
+            {formatCurrencySync(totalDonated)}
           </p>
         </div>
 
@@ -136,7 +147,7 @@ export default function DonationStats() {
               <ul>
                 {pieChartData.map((item, index) => (
                   <li key={index}>
-                    {item.name}: ₹{item.value.toFixed(2)} ({item.count} donations)
+                    {item.name}: {formatCurrencySync(item.value)} ({item.count} donations)
                   </li>
                 ))}
               </ul>
@@ -150,7 +161,7 @@ export default function DonationStats() {
           <p className="text-sm text-yellow-600 font-medium">Most Supported Cause</p>
           <p className="text-lg font-bold text-yellow-800">{mostSupportedCause.cause}</p>
           <p className="text-sm text-yellow-600">
-            ₹{mostSupportedCause.totalAmount.toFixed(2)} ({mostSupportedCause.count} donations)
+            {formatCurrencySync(mostSupportedCause.totalAmount)} ({mostSupportedCause.count} donations)
           </p>
         </div>
       )}
@@ -171,7 +182,7 @@ export default function DonationStats() {
                   </p>
                 </div>
                 <p className="font-semibold text-green-600">
-                  ₹{(causeData.totalAmount || 0).toFixed(2)}
+                  {formatCurrencySync(causeData.totalAmount || 0)}
                 </p>
               </div>
             ))}
