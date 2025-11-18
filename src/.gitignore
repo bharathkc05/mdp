@@ -3,13 +3,26 @@ node_modules/
 **/node_modules/
 package-lock.json
 
-# Environment variables
+# Environment variables (SENSITIVE - never commit!)
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 **/.env
+**/.env.*
+
+# SSL Certificates (Story 5.1 - SECURITY SENSITIVE!)
+ssl/
+**/ssl/
+*.key
+*.crt
+*.csr
+*.pem
+*.p12
+*.pfx
+*.cer
+*.der
 
 # Logs
 logs

@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { logger } from './logger.js';
 
 async function createTransporter() {
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -27,7 +28,7 @@ async function createTransporter() {
 }
 
 export async function sendPasswordResetEmail(toEmail, token) {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5175';
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const link = `${frontendUrl.replace(/\/$/, '')}/reset-password?token=${token}`;
   
   const transporter = await createTransporter();
@@ -69,7 +70,7 @@ export async function sendPasswordResetEmail(toEmail, token) {
 
 export async function sendVerificationEmail(toEmail, token) {
   // Build verification link that points to the frontend verify page
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5175';
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const link = `${frontendUrl.replace(/\/$/, '')}/verify?token=${token}`;
 
   // Create transporter (prefer explicit SMTP env, fallback to Ethereal)
@@ -118,7 +119,7 @@ export async function sendVerificationEmail(toEmail, token) {
 
   const info = await transporter.sendMail(mailOptions);
   const previewUrl = nodemailer.getTestMessageUrl(info) || null;
-  console.log('Verification email preview URL:', previewUrl);
+  logger.info({ previewUrl, to: toEmail }, 'Verification email sent (preview URL)');
 
   return { info, previewUrl, link, token };
 }

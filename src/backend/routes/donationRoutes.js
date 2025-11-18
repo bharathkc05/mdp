@@ -3,7 +3,12 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import Cause from "../models/Cause.js";
 import User from "../models/User.js";
+import PlatformConfig from "../models/PlatformConfig.js";
 import { protect } from "../middleware/auth.js";
+import { donationRateLimiter } from "../middleware/rateLimiter.js";
+// Story 3.4: Audit Logging
+import { logDonationCreated, logDonationFailed } from "../utils/auditLogger.js";
+import PDFDocument from 'pdfkit';
 
 const router = express.Router();
 
@@ -80,7 +85,8 @@ router.get('/causes/:id', async (req, res) => {
 // @desc    Make a donation to a cause with atomic transaction
 // @access  Authenticated users (donors)
 // @implements Story 2.3 (MDP-F-007) - Atomic Transaction Recording
-router.post('/', async (req, res) => {
+// Story 5.3: Rate Limited
+router.post('/', donationRateLimiter, async (req, res) => {
   // Start a session for transaction
   const session = await mongoose.startSession();
   
@@ -99,6 +105,15 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ 
         success: false,
         message: 'Donation amount must be greater than 0' 
+      });
+    }
+
+    // Story 2.6: Validate minimum donation amount
+    const platformConfig = await PlatformConfig.getConfig();
+    if (platformConfig.minimumDonation.enabled && amount < platformConfig.minimumDonation.amount) {
+      return res.status(400).json({ 
+        success: false,
+        message: `Donation amount must be at least ${platformConfig.currency.symbol}${platformConfig.minimumDonation.amount}` 
       });
     }
 
@@ -183,6 +198,15 @@ router.post('/', async (req, res) => {
       await session.commitTransaction();
       console.log(`[Transaction Success] Donation recorded: ${recordedPaymentId}, User: ${req.user.email}, Cause: ${cause.name}, Amount: ${amount}`);
 
+      // Story 3.4: Log successful donation
+      await logDonationCreated(req, {
+        amount,
+        causeId: cause._id,
+        causeName: cause.name,
+        paymentId: recordedPaymentId,
+        paymentMethod: recordedPaymentMethod
+      });
+
       res.status(201).json({
         success: true,
         message: 'Donation successful! Thank you for your contribution.',
@@ -216,6 +240,14 @@ router.post('/', async (req, res) => {
         timestamp: new Date().toISOString()
       });
 
+      // Story 3.4: Log failed donation
+      await logDonationFailed(req, {
+        amount,
+        causeId,
+        causeName: cause.name,
+        reason: transactionError.message
+      });
+
       throw transactionError; // Re-throw to be caught by outer catch
     }
 
@@ -229,6 +261,202 @@ router.post('/', async (req, res) => {
     });
   } finally {
     // Always end the session
+    session.endSession();
+  }
+});
+
+// @route   POST /api/donate/multi
+// @desc    Make a donation to multiple causes with allocation
+// @access  Authenticated users (donors)
+// @implements Story 2.4 - Multi-Cause Donation
+// Story 5.3: Rate Limited
+router.post('/multi', donationRateLimiter, async (req, res) => {
+  const session = await mongoose.startSession();
+  
+  try {
+    const { causes, totalAmount, paymentMethod, paymentId } = req.body;
+
+    // Validation
+    if (!causes || !Array.isArray(causes) || causes.length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'At least one cause must be selected' 
+      });
+    }
+
+    if (!totalAmount || totalAmount <= 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Total donation amount must be greater than 0' 
+      });
+    }
+
+    // Story 2.6: Validate minimum donation amount for total
+    const platformConfig = await PlatformConfig.getConfig();
+    if (platformConfig.minimumDonation.enabled && totalAmount < platformConfig.minimumDonation.amount) {
+      return res.status(400).json({ 
+        success: false,
+        message: `Total donation amount must be at least ${platformConfig.currency.symbol}${platformConfig.minimumDonation.amount}` 
+      });
+    }
+
+    // Validate allocations
+    const totalAllocated = causes.reduce((sum, c) => sum + (c.amount || 0), 0);
+    if (Math.abs(totalAllocated - totalAmount) > 0.01) { // Allow for floating point errors
+      return res.status(400).json({ 
+        success: false,
+        message: `Allocated amounts (${totalAllocated}) must equal total amount (${totalAmount})` 
+      });
+    }
+
+    // Validate each cause allocation
+    for (const causeAllocation of causes) {
+      if (!causeAllocation.causeId || !causeAllocation.amount) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Each cause must have a valid ID and amount' 
+        });
+      }
+
+      if (causeAllocation.amount <= 0) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Each cause allocation must be greater than 0' 
+        });
+      }
+    }
+
+    // Fetch all causes and validate
+    const causeIds = causes.map(c => c.causeId);
+    const causeDocs = await Cause.find({ _id: { $in: causeIds } });
+    
+    if (causeDocs.length !== causeIds.length) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'One or more causes not found' 
+      });
+    }
+
+    // Check if all causes are active
+    const inactiveCauses = causeDocs.filter(c => c.status !== 'active');
+    if (inactiveCauses.length > 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: `Some causes are not active: ${inactiveCauses.map(c => c.name).join(', ')}` 
+      });
+    }
+
+    // Check for ended causes
+    const endedCauses = causeDocs.filter(c => c.endDate && new Date(c.endDate) < new Date());
+    if (endedCauses.length > 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: `Some causes have ended: ${endedCauses.map(c => c.name).join(', ')}` 
+      });
+    }
+
+    // Generate payment ID
+    const recordedPaymentId = paymentId || (crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'));
+    const recordedPaymentMethod = paymentMethod || 'manual';
+
+    console.log(`[Multi-Cause Payment Stub] Payment ID: ${recordedPaymentId}, Total: ${totalAmount}, Causes: ${causes.length}`);
+
+    // START ATOMIC TRANSACTION
+    session.startTransaction();
+
+    try {
+      const donationRecords = [];
+      const updatedCauses = [];
+
+      // Update each cause
+      for (const causeAllocation of causes) {
+        const causeDoc = causeDocs.find(c => c._id.toString() === causeAllocation.causeId);
+        
+        // Update cause with donation
+        const updatedCause = await Cause.findByIdAndUpdate(
+          causeAllocation.causeId,
+          {
+            $inc: { currentAmount: causeAllocation.amount, donorCount: 1 }
+          },
+          { new: true, session }
+        );
+
+        // Check if target is reached
+        if (updatedCause.currentAmount >= updatedCause.targetAmount && updatedCause.status === 'active') {
+          updatedCause.status = 'completed';
+          await updatedCause.save({ session });
+        }
+
+        updatedCauses.push({
+          causeId: updatedCause._id,
+          name: updatedCause.name,
+          currentAmount: updatedCause.currentAmount,
+          targetAmount: updatedCause.targetAmount,
+          status: updatedCause.status
+        });
+
+        // Create donation record for this cause
+        donationRecords.push({
+          amount: causeAllocation.amount,
+          cause: causeDoc.name,
+          causeId: causeDoc._id,
+          paymentId: recordedPaymentId,
+          paymentMethod: recordedPaymentMethod,
+          status: 'completed',
+          date: new Date(),
+          isMultiCause: true
+        });
+      }
+
+      // Update user's donation history
+      await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          $push: { donations: { $each: donationRecords } }
+        },
+        { new: true, session }
+      );
+
+      // Commit the transaction
+      await session.commitTransaction();
+      console.log(`[Multi-Cause Transaction Success] Payment: ${recordedPaymentId}, User: ${req.user.email}, Total: ${totalAmount}`);
+
+      res.status(201).json({
+        success: true,
+        message: `Successfully donated to ${causes.length} causes! Thank you for your contribution.`,
+        data: {
+          totalAmount,
+          paymentId: recordedPaymentId,
+          paymentMethod: recordedPaymentMethod,
+          causesCount: causes.length,
+          donations: donationRecords.map((d, idx) => ({
+            cause: d.cause,
+            amount: d.amount,
+            causeStatus: updatedCauses[idx]
+          })),
+          date: donationRecords[0].date
+        }
+      });
+
+    } catch (transactionError) {
+      await session.abortTransaction();
+      console.error(`[Multi-Cause Transaction Rollback]`, {
+        error: transactionError.message,
+        user: req.user.email,
+        paymentId: recordedPaymentId,
+        timestamp: new Date().toISOString()
+      });
+      throw transactionError;
+    }
+
+  } catch (error) {
+    console.error('[Multi-Cause Donation Error]', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to process multi-cause donation. No charges were made. Please try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  } finally {
     session.endSession();
   }
 });
@@ -345,6 +573,68 @@ router.get('/categories', async (req, res) => {
       success: false,
       message: 'Server error while fetching categories' 
     });
+  }
+});
+
+// @route   GET /api/donate/receipt/:paymentId
+// @desc    Generate and download PDF receipt for a donation
+// @access  Authenticated users (donors) - admins can fetch any donation
+router.get('/receipt/:paymentId', async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+
+    let user;
+    let donation;
+
+    // If admin, allow fetching any user's donation by paymentId
+    if (req.user && req.user.role === 'admin') {
+      user = await User.findOne({ 'donations.paymentId': paymentId }).select('donations firstName lastName email');
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Donation not found' });
+      }
+      donation = user.donations.find(d => d.paymentId === paymentId);
+    } else {
+      user = await User.findById(req.user._id).select('donations firstName lastName email');
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      donation = user.donations.find(d => d.paymentId === paymentId);
+      if (!donation) {
+        return res.status(404).json({ success: false, message: 'Donation not found for this user' });
+      }
+    }
+
+    // Create PDF and stream to response
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="receipt_${paymentId}.pdf"`);
+
+    doc.pipe(res);
+
+    const donorName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+
+    doc.fontSize(20).text('Donation Receipt', { align: 'center' });
+    doc.moveDown();
+
+    doc.fontSize(12).text(`Donor: ${donorName}`);
+    doc.text(`Email: ${user.email}`);
+    doc.text(`Date: ${new Date(donation.date).toLocaleString()}`);
+    doc.text(`Payment ID: ${donation.paymentId}`);
+    doc.text(`Payment Method: ${donation.paymentMethod || 'N/A'}`);
+    doc.moveDown();
+
+    doc.text(`Cause: ${donation.cause}`);
+    doc.text(`Amount: ${Number(donation.amount).toFixed(2)}`);
+
+    doc.moveDown(2);
+    doc.text('Thank you for your contribution!', { align: 'center' });
+
+    doc.end();
+
+  } catch (error) {
+    console.error('Error generating receipt:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate receipt' });
   }
 });
 
