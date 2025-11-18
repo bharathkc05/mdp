@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+// Use relative path in production (Vercel) or localhost in development
+const baseURL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.PROD ? "/api" : "http://localhost:3000/api");
 
 // Helper to clean API paths
 const cleanPath = (path) => {
