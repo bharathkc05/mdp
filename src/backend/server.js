@@ -108,5 +108,11 @@ app.use(notFoundHandler);
 // Story 5.4: Global error handling middleware (must be last)
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => logger.info({ port: PORT }, '🚀 Backend running'));
+// Export app for Vercel serverless function
+export default app;
+
+// Only start server if not in Vercel environment
+if (process.env.VERCEL !== '1') {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => logger.info({ port: PORT }, '🚀 Backend running'));
+}

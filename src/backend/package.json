@@ -7,6 +7,7 @@
     "start:https": "node server-https.js",
     "dev": "nodemon server.js",
     "dev:https": "nodemon server-https.js",
+    "vercel-build": "echo 'Backend build complete'",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --forceExit",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --forceExit",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
