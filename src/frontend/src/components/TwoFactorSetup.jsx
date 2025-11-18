@@ -185,9 +185,9 @@ export default function TwoFactorSetup() {
           </p>
           
           <div className="mb-4 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
-            <h4 className="font-semibold mb-2 text-yellow-800">⚠️ Important: Save Your Backup Codes</h4>
+            <h4 className="font-semibold mb-2 text-yellow-800">⚠️ Important - Save Backup Codes</h4>
             <div className="grid grid-cols-2 gap-2 font-mono text-sm">
-              {backupCodes.map((code, index) => (
+              {backupCodes?.map((code, index) => (
                 <div key={index} className="bg-white p-2 rounded border border-gray-300">
                   {code}
                 </div>
