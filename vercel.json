@@ -1,21 +1,28 @@
 {
   "version": 2,
-  "functions": {
-    "src/backend/server.js": {
-      "runtime": "nodejs20.x"
+  "builds": [
+    {
+      "src": "src/backend/server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "src/frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     }
-  },
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/src/backend/server.js"
+      "dest": "src/backend/server.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/src/frontend/dist/$1"
+      "dest": "src/frontend/dist/$1"
     }
   ],
   "installCommand": "npm install --prefix src/backend && cd src/frontend && npm install --legacy-peer-deps",
-  "buildCommand": "cd src/frontend && npm run build",
-  "outputDirectory": "src/frontend/dist"
+  "buildCommand": "cd src/frontend && npm run build"
 }
