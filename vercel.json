@@ -23,6 +23,6 @@
       "dest": "src/frontend/dist/$1"
     }
   ],
-  "installCommand": "npm install --prefix src/backend && cd src/frontend && npm install --legacy-peer-deps",
-  "buildCommand": "cd src/frontend && npm run build"
+  "installCommand": "npm install --prefix src/backend && npm install --prefix src/frontend --legacy-peer-deps",
+  "buildCommand": "npm run build --prefix src/frontend"
 }
