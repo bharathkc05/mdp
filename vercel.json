@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "functions": {
+    "src/backend/server.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/src/backend/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/src/frontend/dist/$1"
+    }
+  ],
+  "installCommand": "npm install --prefix src/backend && cd src/frontend && npm install --legacy-peer-deps",
+  "buildCommand": "cd src/frontend && npm run build",
+  "outputDirectory": "src/frontend/dist"
+}
