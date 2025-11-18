@@ -36,6 +36,9 @@ handleUnhandledRejection();
 
 const app = express();
 
+// Trust proxy - required for Vercel and rate limiting
+app.set('trust proxy', 1);
+
 // Story 5.1: Enforce HTTPS and Secure Transport
 // Apply HTTPS enforcement first (before other middleware)
 app.use(enforceHTTPS);
