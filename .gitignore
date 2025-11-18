@@ -10,6 +10,7 @@
 !.github/
 !vercel.json
 !DEPLOYMENT.md
+!package.json
 
 # Environment files (sensitive)
 .env
