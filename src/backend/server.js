@@ -100,7 +100,7 @@ app.use("/api/admin/audit-logs", auditLogRoutes); // Story 3.4: View System Audi
 app.use("/api/config", configRoutes); // Story 2.6: Platform Configuration
 
 // Story 5.5: System Health Check Endpoint (public endpoint, no authentication required)
-app.use("/health", healthRoutes);
+app.use("/api/health", healthRoutes);
 
 // Story 5.4: 404 handler for undefined routes
 app.use(notFoundHandler);
