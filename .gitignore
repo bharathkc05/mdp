@@ -4,6 +4,7 @@
 # But keep these important folders/files
 !src/
 !docs/
+!api/
 !.gitignore
 !README.md
 !.github/
