@@ -1,29 +1,8 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "src/backend/server.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "src/frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+      "source": "/api/:path*",
+      "destination": "/src/backend/server.js"
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "src/backend/server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "src/frontend/dist/$1"
-    }
-  ],
-  "env": {
-    "ESBUILD_BINARY_PATH": "/tmp/node_modules/esbuild/bin/esbuild"
-  }
+  ]
 }
