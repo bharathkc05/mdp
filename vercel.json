@@ -23,6 +23,7 @@
       "dest": "src/frontend/dist/$1"
     }
   ],
-  "installCommand": "npm install --prefix src/backend && npm install --prefix src/frontend --legacy-peer-deps",
-  "buildCommand": "npm run build --prefix src/frontend"
+  "env": {
+    "ESBUILD_BINARY_PATH": "/tmp/node_modules/esbuild/bin/esbuild"
+  }
 }
