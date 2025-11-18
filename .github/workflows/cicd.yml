@@ -178,6 +178,69 @@ jobs:
         echo "System foundation tests completed"
       continue-on-error: true
     
+    - name: Run unit tests with coverage
+      run: |
+        cd src/backend
+        echo "🧪 Running backend unit tests with coverage..."
+        npm run test:coverage || echo "⚠️ Some tests failed"
+      continue-on-error: true
+    
+    - name: Generate backend coverage report
+      if: always()
+      run: |
+        cd src/backend
+        if [ -f coverage/coverage-summary.json ]; then
+          echo "## 📊 Backend Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Extract coverage percentages using node
+          node -e "
+          const fs = require('fs');
+          try {
+            const coverage = JSON.parse(fs.readFileSync('coverage/coverage-summary.json'));
+            const total = coverage.total;
+            
+            console.log('### Coverage Summary');
+            console.log('| Metric | Percentage | Target | Status |');
+            console.log('|--------|-----------|--------|--------|');
+            
+            const thresholds = { statements: 75, branches: 73, functions: 75, lines: 75 };
+            const metrics = ['statements', 'branches', 'functions', 'lines'];
+            metrics.forEach(metric => {
+              const pct = total[metric].pct;
+              const target = thresholds[metric];
+              const status = pct >= target ? '✅' : '⚠️';
+              console.log(\`| \${metric.charAt(0).toUpperCase() + metric.slice(1)} | \${pct}% | \${target}% | \${status} |\`);
+            });
+            
+            console.log('');
+            console.log('### Coverage Thresholds');
+            const allMet = metrics.every(m => total[m].pct >= thresholds[m]);
+            if (allMet) {
+              console.log('✅ All backend coverage thresholds met');
+              console.log('');
+              console.log('> **Note:** Branch coverage target is 73% (working towards 75%)');
+            } else {
+              console.log('⚠️ Some backend coverage thresholds not met');
+            }
+          } catch (e) {
+            console.log('⚠️ Coverage data not available');
+          }
+          " >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Backend coverage report not generated" >> $GITHUB_STEP_SUMMARY
+        fi
+    
+    - name: Upload backend coverage reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-coverage-report-node-${{ matrix.node-version }}
+        path: |
+          src/backend/coverage/
+          src/backend/coverage/lcov-report/
+        retention-days: 30
+    
     - name: Generate test report
       if: always()
       run: |
