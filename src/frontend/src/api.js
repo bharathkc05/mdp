@@ -102,7 +102,7 @@ export const donationsAPI = {
 export const systemAPI = {
   getHealth: async () => {
     try {
-      const response = await axios.get(`${baseURL.replace('/api', '')}/health`, {
+      const response = await axios.get(`${baseURL}/health`, {
         timeout: 5000 // 5 second timeout
       });
       return response;
