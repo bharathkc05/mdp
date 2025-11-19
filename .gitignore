@@ -4,9 +4,13 @@
 # But keep these important folders/files
 !src/
 !docs/
+!api/
 !.gitignore
 !README.md
 !.github/
+!vercel.json
+!DEPLOYMENT.md
+!package.json
 
 # Environment files (sensitive)
 .env
@@ -32,3 +36,4 @@ logs/
 # OS files
 .DS_Store
 Thumbs.db
+.vercel
