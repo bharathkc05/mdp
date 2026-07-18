@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import User from './../models/User.js';
 
-const uri = 'mongodb+srv://MICRODONATION:jOq58yauOA6Ihqy1@cluster0.gntn595.mongodb.net/mdp';
+const uri = 'mongodb+srv://';
 
 async function fetchAdmins() {
   try {
