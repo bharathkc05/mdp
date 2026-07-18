@@ -191,7 +191,8 @@ router.post('/register', registrationRateLimiter, async (req, res) => {
     });
 
     // create verification token
-    const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_for_development_only';
+    const token = jwt.sign({ email: user.email }, jwtSecret, { expiresIn: '1h' });
 
     // Story 3.4: Log user registration
     await logUserRegistration(req, user);
@@ -222,7 +223,7 @@ router.post('/register', registrationRateLimiter, async (req, res) => {
   } catch (err) {
     if (req?.log) req.log.error({ err }, 'Registration error');
     else logger.error({ err }, 'Registration error');
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error: ' + (err.message || 'Unknown error') });
   }
 });
 

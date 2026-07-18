@@ -1,10 +1,11 @@
 import axios from "axios";
 
 // Use relative path in production (Vercel) or localhost in development
-// Check for localhost explicitly to determine if we're in development
-const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const baseURL = import.meta.env.VITE_API_URL || 
-  (isDevelopment ? "http://localhost:3000/api" : "/api");
+const isDevelopment = import.meta.env.MODE === 'development' || 
+  window.location.hostname === 'localhost' || 
+  window.location.hostname === '127.0.0.1';
+  
+const baseURL = isDevelopment ? "http://localhost:3000/api" : "/api";
 
 // Helper to clean API paths
 const cleanPath = (path) => {
