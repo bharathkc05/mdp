@@ -3,6 +3,7 @@
  * Formats monetary values based on platform configuration
  * OPTIMIZED: Instant updates with in-memory cache and event broadcasting
  */
+import { API_BASE_URL } from '../api';
 
 let cachedConfig = null;
 let configPromise = null;
@@ -41,7 +42,7 @@ async function getPlatformConfig() {
   }
 
   // Prevent multiple simultaneous fetches
-  configPromise = fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/config`)
+  configPromise = fetch(`${API_BASE_URL}/config`)
     .then(response => {
       if (!response.ok) {
         throw new Error('Failed to fetch platform config');

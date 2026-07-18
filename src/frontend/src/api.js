@@ -12,6 +12,8 @@ const cleanPath = (path) => {
   return path.replace(/\/api\/auth\/api\/auth/, '/api/auth');
 };
 
+export const API_BASE_URL = baseURL;
+
 export const API = axios.create({
   baseURL,
   withCredentials: true

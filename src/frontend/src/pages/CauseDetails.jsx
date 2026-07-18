@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { donationsAPI } from '../api';
+import { donationsAPI, API_BASE_URL } from '../api';
 import { formatCurrencySync, getMinimumDonation, invalidateConfigCache } from '../utils/currencyFormatter';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export default function CauseDetails() {
   const { id } = useParams();
@@ -46,7 +44,7 @@ export default function CauseDetails() {
   const fetchCauseDetails = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE}/donate/causes/${id}`, {
+      const response = await axios.get(`${API_BASE_URL}/donate/causes/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       setCause(response.data.data);
