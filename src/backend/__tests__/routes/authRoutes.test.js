@@ -26,12 +26,12 @@ const mockLogUserLogout = jest.fn();
 const mockLogPasswordReset = jest.fn();
 const mockLogEmailVerified = jest.fn();
 
-jest.unstable_mockModule('../../utils/email.js', () => ({
+jest.unstable_mockModule('../../services/emailService.js', () => ({
   sendVerificationEmail: mockSendVerificationEmail,
   sendPasswordResetEmail: mockSendPasswordResetEmail
 }));
 
-jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
+jest.unstable_mockModule('../../services/auditLogService.js', () => ({
   logUserRegistration: mockLogUserRegistration,
   logLoginSuccess: mockLogLoginSuccess,
   logLoginFailed: mockLogLoginFailed,

@@ -106,9 +106,9 @@ export default function AdminAnalyticsDashboard() {
       ]);
 
       setAggregatedData(aggregated.data.data);
-      setTrendData(trends.data.data.trends);
-      setCategoryData(categories.data.data);
-      setTopCauses(top.data.data.topCauses);
+      setTrendData(trends.data.data?.trends || []);
+      setCategoryData(categories.data.data || []);
+      setTopCauses(top.data.data || []);
       setPerformanceMetrics(metrics.data.data);
       setError('');
     } catch (err) {

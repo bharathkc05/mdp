@@ -83,9 +83,16 @@ export default function AdminCauseDashboard() {
         status: statusFilter
       });
       
-      setCauses(data.data);
-      setTotalPages(data.totalPages);
-      setTotal(data.total);
+      const causesList = data.data || [];
+      // Calculate pagination client-side since backend currently returns all
+      setTotalPages(data.totalPages || Math.ceil(causesList.length / limit) || 1);
+      setTotal(data.total || causesList.length);
+      
+      // If we are doing client side pagination, we must slice the array
+      // However if backend eventually adds pagination, we use data.data directly
+      const displayCauses = data.totalPages ? causesList : causesList.slice((currentPage - 1) * limit, currentPage * limit);
+      
+      setCauses(displayCauses);
     } catch (err) {
       console.error("Error fetching causes:", err);
       setError(err.response?.data?.message || "Failed to load causes");

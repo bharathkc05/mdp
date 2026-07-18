@@ -130,22 +130,22 @@ export default function Home() {
                   <span className="inline-block px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-full text-sm font-semibold mb-4">
                     {slide.category}
                   </span>
-                  <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
                     {slide.title}
                   </h1>
-                  <p className="text-xl text-gray-200 mb-8">
+                  <p className="text-lg md:text-xl text-gray-200 mb-8">
                     {slide.subtitle}
                   </p>
-                  <div className="flex gap-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
                     <Link
                       to="/causes"
-                      className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 font-semibold shadow-lg transform hover:scale-105 transition-all"
+                      className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 font-semibold shadow-lg transform hover:scale-105 transition-all text-center"
                     >
                       Explore Causes
                     </Link>
                     <Link
                       to="/register"
-                      className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white border-2 border-white rounded-lg hover:bg-white/20 font-semibold transition-all"
+                      className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white border-2 border-white rounded-lg hover:bg-white/20 font-semibold transition-all text-center"
                     >
                       Start Donating
                     </Link>
@@ -196,7 +196,7 @@ export default function Home() {
       {/* Platform Statistics */}
       <section className="py-16 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div className="text-white">
               <div className="text-5xl font-bold mb-2">{formatCurrencySync(Math.round(stats.totalDonations / 1000))}K+</div>
               <div className="text-blue-100 text-lg">Total Donations</div>

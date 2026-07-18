@@ -129,14 +129,15 @@ export const donationRateLimiter = rateLimit({
  */
 export const generalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per windowMs
+  // Allow more requests in development so admin dashboard polling doesn't hit limits
+  max: process.env.NODE_ENV === 'production' ? 100 : 500,
   message: 'Too many requests from this IP. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
   skip: (req) => {
     // Skip rate limiting for health check and public config endpoints
-    return req.path === '/health' || req.path.startsWith('/api/config');
+    return req.path === '/health' || req.path.startsWith('/api/config') || req.path.startsWith('/config');
   }
 });
 

@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { logger } from './logger.js';
+import { logger } from '../utils/logger.js';
 
 async function createTransporter() {
   if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {

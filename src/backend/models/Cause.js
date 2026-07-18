@@ -55,6 +55,13 @@ const causeSchema = new mongoose.Schema({
   timestamps: true 
 });
 
+// Add performance indexes for frequent queries
+causeSchema.index({ status: 1 });
+causeSchema.index({ category: 1 });
+// Add text index for search functionality
+causeSchema.index({ name: 'text', description: 'text' });
+
+
 // Virtual for calculating percentage of target achieved
 causeSchema.virtual('percentageAchieved').get(function() {
   if (this.targetAmount === 0) return 0;

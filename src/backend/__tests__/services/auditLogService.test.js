@@ -25,7 +25,7 @@ import {
   logUserRoleChanged,
   logAdminAction,
   logConfigUpdated
-} from '../../utils/auditLogger.js';
+} from '../../services/auditLogService.js';
 
 let mongoServer;
 

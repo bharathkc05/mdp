@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authAPI } from "../api";
+import TwoFactorSetup from "../components/TwoFactorSetup";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -27,15 +28,16 @@ export default function Profile() {
   const fetchUserProfile = async () => {
     try {
       const { data } = await authAPI.getProfile();
-      setUser(data);
+      const userData = data.data || data;
+      setUser(userData);
       setFormData({
-        firstName: data.firstName || '',
-        lastName: data.lastName || '',
-        age: data.age || '',
-        gender: data.gender || '',
-        phoneNumber: data.profile?.phoneNumber || '',
-        address: data.profile?.address || '',
-        preferredCauses: data.profile?.preferredCauses || []
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        age: userData.age || '',
+        gender: userData.gender || '',
+        phoneNumber: userData.profile?.phoneNumber || '',
+        address: userData.profile?.address || '',
+        preferredCauses: userData.profile?.preferredCauses || []
       });
     } catch (error) {
       console.error('Failed to fetch profile:', error);
@@ -74,7 +76,8 @@ export default function Profile() {
       };
 
       const { data } = await authAPI.updateProfile(updateData);
-      setUser(data.user);
+      const updatedUser = data.data || data.user;
+      setUser(updatedUser);
       setEditing(false);
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       
@@ -82,7 +85,7 @@ export default function Profile() {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        localStorage.setItem('user', JSON.stringify({ ...parsedUser, ...data.user }));
+        localStorage.setItem('user', JSON.stringify({ ...parsedUser, ...updatedUser }));
       }
     } catch (error) {
       console.error('Failed to update profile:', error);
@@ -358,6 +361,13 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {/* 2FA Setup — admin only */}
+      {user?.role === 'admin' && (
+        <div className="mt-8">
+          <TwoFactorSetup />
+        </div>
+      )}
     </div>
   );
 }

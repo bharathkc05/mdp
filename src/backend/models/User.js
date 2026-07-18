@@ -1,18 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-const donationSchema = new mongoose.Schema({
-  amount: { type: Number, required: true },
-  // Keep human-readable cause name for backwards compatibility
-  cause: { type: String, required: true },
-  // Reference to Cause document for better relations
-  causeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Cause' },
-  // Payment details (optional when payment is simulated)
-  paymentId: { type: String },
-  paymentMethod: { type: String },
-  status: { type: String, enum: ['pending','completed','failed'], default: 'completed' },
-  date: { type: Date, default: Date.now }
-}, { _id: false });
+import donationSchema from "./DonationSchema.js";
 
 const userSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
@@ -47,6 +36,10 @@ const userSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
+// Add performance indexes for embedded donations array
+userSchema.index({ "donations.paymentId": 1 });
+userSchema.index({ "donations.date": -1 });
+userSchema.index({ "donations.cause": 1 });
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();

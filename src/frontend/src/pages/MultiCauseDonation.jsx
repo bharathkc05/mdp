@@ -49,7 +49,7 @@ export default function MultiCauseDonation() {
       const response = await API.get('/causes');
       
       if (response.data.success) {
-        setCauses(response.data.causes);
+        setCauses(response.data.data);
       } else {
         setError('Failed to load causes');
       }

@@ -3,10 +3,14 @@ import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
+import mongoSanitize from "express-mongo-sanitize";
+import xss from "xss-clean";
 import { httpLogger, logger } from "./utils/logger.js";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
-import adminRoutes from "./routes/adminRoutes.js";
+
+import userRoutes from "./routes/userRoutes.js";
 import donationRoutes from "./routes/donationRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import healthRoutes from "./routes/healthRoutes.js";
@@ -26,7 +30,7 @@ import {
   setSecurityHeaders 
 } from "./middleware/httpsEnforcer.js";
 import { generalRateLimiter } from "./middleware/rateLimiter.js";
-import { startCauseStatusUpdater, updateExpiredCauses } from "./utils/causeStatusUpdater.js";
+import { startCauseStatusUpdater, updateExpiredCauses } from "./jobs/causeStatusUpdater.js";
 
 dotenv.config();
 
@@ -63,7 +67,14 @@ app.use(
 app.use(generalRateLimiter);
 
 // Parsing middleware
+app.use(cookieParser());
 app.use(express.json({ limit: '10kb' })); // Body parser with size limit
+
+// Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
+
+// Data sanitization against XSS
+app.use(xss());
 
 // Structured HTTP request logging (pino)
 app.use(httpLogger);
@@ -81,20 +92,10 @@ updateExpiredCauses().catch(err =>
   logger.error({ err }, 'Failed to run initial expired causes check')
 );
 
-// Normalize accidentally duplicated API prefixes (e.g. /api/auth/api/auth/verify)
-app.use((req, res, next) => {
-  if (req.url.includes('/api/auth/api/auth')) {
-    req.url = req.url.replace('/api/auth/api/auth', '/api/auth');
-    // use request-scoped logger when available
-    if (req.log) req.log.info({ normalizedUrl: req.url }, 'Normalized URL');
-    else logger.info({ normalizedUrl: req.url }, 'Normalized URL');
-  }
-  next();
-});
-
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/api/users", userRoutes); // Extracted Users Module
+
 app.use("/api/causes", causeRoutes); // Story 2.1: Browse, Search, and Filter Causes
 app.use("/api/donate", donationRoutes);
 app.use("/api/dashboard", dashboardRoutes); // Story 4.1: Backend Aggregation Dashboard

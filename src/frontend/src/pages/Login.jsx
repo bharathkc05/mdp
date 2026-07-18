@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { API } from "../api";
+import { authAPI } from "../api";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
+  const { login } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
   const [resendStatus, setResendStatus] = useState("");
@@ -41,7 +43,7 @@ export default function Login() {
     setLoading(true);
     setPreviewUrl("");
     try {
-      const { data } = await API.post("/auth/resend-verification", { email: form.email });
+      const { data } = await authAPI.resendVerification(form.email);
       setResendStatus(data.message);
       if (data.previewUrl) {
         setPreviewUrl(data.previewUrl);
@@ -75,7 +77,8 @@ export default function Login() {
         }
       }
       
-      const { data } = await API.post("/auth/login", loginData);
+      const response = await login(loginData);
+      const data = response.data.data || response.data;
       
       // Check if 2FA is required
       if (data.requiresTwoFactor) {
@@ -85,24 +88,13 @@ export default function Login() {
         return;
       }
       
-      // Successful login
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("email", form.email);
-      
-      // Store user object with role for AdminRoute to work
-      const userObj = {
-        email: form.email,
-        role: data.role || 'donor',
-        firstName: data.firstName,
-        lastName: data.lastName
-      };
-      localStorage.setItem("user", JSON.stringify(userObj));
-      
-      if (data.role) {
-        localStorage.setItem("role", data.role);
+      // No localStorage anymore, AuthContext handles state
+      const role = data.role || 'donor';
+      if (role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
       }
-      setMessage('Successfully logged in');
-      setTimeout(() => navigate('/dashboard'), 1500);
     } catch (err) {
       setMessage(err.response?.data?.message || "Login failed");
       // If 2FA code was wrong, keep the 2FA form visible

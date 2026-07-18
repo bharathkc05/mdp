@@ -53,8 +53,8 @@ export default function BrowseCauses() {
       const response = await API.get('/causes');
       
       if (response.data.success) {
-        setCauses(response.data.causes);
-        setFilteredCauses(response.data.causes);
+        setCauses(response.data.data);
+        setFilteredCauses(response.data.data);
       } else {
         setError('Failed to load causes');
       }

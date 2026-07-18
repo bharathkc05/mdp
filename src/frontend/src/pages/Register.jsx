@@ -118,7 +118,7 @@ export default function Register() {
             <form onSubmit={handleSubmit} className="space-y-4" noValidate aria-labelledby="register-heading">
               <h2 id="register-heading" className="sr-only">Registration Form</h2>
               
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1">
                   <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
                     First name <span className="text-red-600" aria-label="required">*</span>

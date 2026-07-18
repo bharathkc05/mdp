@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
@@ -24,52 +25,27 @@ import AdminPreviousDonations from "./pages/AdminPreviousDonations";
 import { initializeCurrencyConfig } from "./utils/currencyFormatter";
 
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) return <div>Loading...</div>;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
   return children;
 };
 
 const AdminRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  if (user.role !== "admin") {
-    return <Navigate to="/dashboard" replace />;
-  }
-  
+  const { isAuthenticated, user, loading } = useAuth();
+  if (loading) return <div>Loading...</div>;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user?.role !== "admin") return <Navigate to="/dashboard" replace />;
   return children;
 };
 
 function App() {
-  const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
-    // Check if token exists and is valid
-    const token = localStorage.getItem("token");
-    
     // Story 2.6: Initialize currency configuration
     initializeCurrencyConfig().catch(err => 
       console.error('Failed to load currency config:', err)
     );
-    
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-
-    // You can add token validation logic here if needed
-    setIsLoading(false);
   }, []);
-
-  if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
 
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
@@ -102,7 +78,7 @@ function App() {
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  {/* Note: /dashboard is the User Profile page - shows role-specific content */}
+                  {/* Redirect admins away from /dashboard to /admin */}
                   <Dashboard />
                 </ProtectedRoute>
               }
@@ -195,4 +171,10 @@ function App() {
   );
 }
 
-export default App;
+export default function Root() {
+  return (
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  );
+}

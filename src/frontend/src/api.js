@@ -7,12 +7,6 @@ const isDevelopment = import.meta.env.MODE === 'development' ||
   
 const baseURL = isDevelopment ? "http://localhost:3000/api" : "/api";
 
-// Helper to clean API paths
-const cleanPath = (path) => {
-  // Remove any duplicate /api/auth prefixes
-  return path.replace(/\/api\/auth\/api\/auth/, '/api/auth');
-};
-
 export const API_BASE_URL = baseURL;
 
 export const API = axios.create({
@@ -20,25 +14,13 @@ export const API = axios.create({
   withCredentials: true
 });
 
-// Add request interceptor to clean URLs
+// Request interceptor for API calls (Tokens are now HttpOnly cookies, so no need to attach headers here)
 API.interceptors.request.use(
   (config) => {
-    config.url = cleanPath(config.url);
-    return config;
-  }
-);
-
-// Request interceptor for API calls
-API.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
     return config;
   },
   (error) => {
-    Promise.reject(error);
+    return Promise.reject(error);
   }
 );
 
@@ -50,9 +32,9 @@ API.interceptors.response.use(
 
     // Redirect to login page if unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
+      if (window.location.pathname !== '/login') {
+        window.location.href = "/login";
+      }
     }
 
     return Promise.reject(error);
@@ -68,6 +50,17 @@ export const authAPI = {
       console.error('Login error:', error);
       throw error.response?.data?.message ? error : { response: { data: { message: 'Login failed' } } };
     }
+  },
+  logout: async () => {
+    try {
+      return await API.post("/auth/logout");
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  },
+  resendVerification: async (email) => {
+    return await API.post("/auth/resend-verification", { email });
   },
   register: async (userData) => {
     try {
@@ -88,14 +81,14 @@ export const authAPI = {
       throw error.response?.data?.message ? error : { response: { data: { message: 'Verification failed' } } };
     }
   },
-  getProfile: () => API.get("/auth/profile"),
-  updateProfile: (data) => API.put("/auth/profile", data),
+  getProfile: () => API.get("/users/me"),
+  updateProfile: (data) => API.put("/users/me", data),
 };
 
 // Donations API
 export const donationsAPI = {
   getDonations: () => API.get("/donate/history"),
-  getCauses: () => API.get("/donate/causes"),
+  getCauses: () => API.get("/causes"),
   makeDonation: (data) => API.post("/donate", data),
   downloadReceipt: (paymentId) => API.get(`/donate/receipt/${paymentId}`, { responseType: 'blob' }),
   getStats: () => API.get("/donate/stats"),
@@ -133,22 +126,22 @@ export const dashboardAPI = {
 // Admin API
 export const adminAPI = {
   // Dashboard
-  getDashboardStats: () => API.get("/admin/dashboard/stats"),
+  getDashboardStats: () => API.get("/dashboard/stats"),
   
   // Causes management
-  getCauses: (params) => API.get("/admin/causes", { params }),
-  getCause: (id) => API.get(`/admin/causes/${id}`),
-  createCause: (data) => API.post("/admin/causes", data),
-  updateCause: (id, data) => API.put(`/admin/causes/${id}`, data),
-  deleteCause: (id) => API.delete(`/admin/causes/${id}`),
-  archiveCause: (id) => API.patch(`/admin/causes/${id}/archive`),
+  getCauses: (params) => API.get("/causes/admin", { params }),
+  getCause: (id) => API.get(`/causes/admin/${id}`),
+  createCause: (data) => API.post("/causes/admin", data),
+  updateCause: (id, data) => API.put(`/causes/admin/${id}`, data),
+  deleteCause: (id) => API.delete(`/causes/admin/${id}`),
+  archiveCause: (id) => API.patch(`/causes/admin/${id}/archive`),
   
   // Users management
-  getUsers: () => API.get("/admin/users"),
-  getUser: (id) => API.get(`/admin/users/${id}`),
-  updateUserRole: (id, role) => API.put(`/admin/users/${id}/role`, { role }),
-  getPreviousDonations: (options) => API.get('/admin/previous-donations', options),
-  getDonationsByUser: () => API.get('/admin/donations/by-user'),
+  getUsers: () => API.get("/users"),
+  getUser: (id) => API.get(`/users/${id}`),
+  updateUserRole: (id, role) => API.put(`/users/${id}/role`, { role }),
+  getPreviousDonations: (options) => API.get('/donate/admin/previous-donations', options),
+  getDonationsByUser: () => API.get('/donate/admin/by-user'),
 };
 
 // Platform Configuration API (Story 2.6)

@@ -28,7 +28,7 @@ const mockLogCauseDeleted = jest.fn();
 const mockLogCauseArchived = jest.fn();
 const mockLogUserRoleChanged = jest.fn();
 
-jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
+jest.unstable_mockModule('../../services/auditLogService.js', () => ({
   logCauseCreated: mockLogCauseCreated,
   logCauseUpdated: mockLogCauseUpdated,
   logCauseDeleted: mockLogCauseDeleted,
@@ -38,7 +38,7 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
 
 // Mock cause status updater
 const mockUpdateExpiredCauses = jest.fn();
-jest.unstable_mockModule('../../utils/causeStatusUpdater.js', () => ({
+jest.unstable_mockModule('../../jobs/causeStatusUpdater.js', () => ({
   updateExpiredCauses: mockUpdateExpiredCauses
 }));
 

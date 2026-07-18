@@ -23,7 +23,7 @@ let donorToken;
 
 // Mock audit logger
 const mockLogConfigUpdated = jest.fn();
-jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
+jest.unstable_mockModule('../../services/auditLogService.js', () => ({
   logConfigUpdated: mockLogConfigUpdated
 }));
 

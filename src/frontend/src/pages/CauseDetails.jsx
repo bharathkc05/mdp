@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { donationsAPI, API_BASE_URL } from '../api';
 import { formatCurrencySync, getMinimumDonation, invalidateConfigCache } from '../utils/currencyFormatter';
+import { useAuth } from '../context/AuthContext';
 
 export default function CauseDetails() {
   const { id } = useParams();
@@ -14,7 +15,15 @@ export default function CauseDetails() {
   const [donationAmount, setDonationAmount] = useState('');
   const [donationMessage, setDonationMessage] = useState({ type: '', text: '' });
   const [minDonation, setMinDonation] = useState({ amount: 1, enabled: true });
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      setIsAdmin(user.role === 'admin');
+    }
+  }, [user]);
 
   useEffect(() => {
     fetchCauseDetails();

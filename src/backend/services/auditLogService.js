@@ -1,10 +1,100 @@
-/**
- * Story 3.4: View System Audit Logs
- * Audit Logging Utility - Helper functions to log system events
- */
-
 import AuditLog from "../models/AuditLog.js";
 
+export const getAuditLogs = async (queryParams) => {
+  const { page = 1, limit = 50, eventType, severity, userId, startDate, endDate, search } = queryParams;
+
+  const query = {};
+  if (eventType && eventType !== 'all') query.eventType = eventType;
+  if (severity && severity !== 'all') query.severity = severity;
+  if (userId) query.userId = userId;
+
+  if (startDate || endDate) {
+    query.createdAt = {};
+    if (startDate) query.createdAt.$gte = new Date(startDate);
+    if (endDate) query.createdAt.$lte = new Date(endDate);
+  }
+
+  if (search) {
+    query.$or = [
+      { description: { $regex: search, $options: 'i' } },
+      { userEmail: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+
+  const [logs, totalCount] = await Promise.all([
+    AuditLog.find(query)
+      .populate('userId', 'firstName lastName email role')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean(),
+    AuditLog.countDocuments(query)
+  ]);
+
+  const sanitizedLogs = logs.map(log => {
+    const sanitized = { ...log };
+    if (sanitized.metadata) {
+      delete sanitized.metadata.password;
+      delete sanitized.metadata.token;
+      delete sanitized.metadata.secret;
+    }
+    return sanitized;
+  });
+
+  return {
+    logs: sanitizedLogs,
+    pagination: {
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(totalCount / parseInt(limit)),
+      totalCount,
+      limit: parseInt(limit),
+      hasMore: skip + logs.length < totalCount
+    }
+  };
+};
+
+export const getAuditLogStats = async (startDate, endDate) => {
+  const dateFilter = {};
+  if (startDate || endDate) {
+    dateFilter.createdAt = {};
+    if (startDate) dateFilter.createdAt.$gte = new Date(startDate);
+    if (endDate) dateFilter.createdAt.$lte = new Date(endDate);
+  }
+
+  const [totalLogs, eventTypeStats, severityStats, recentActivity] = await Promise.all([
+    AuditLog.countDocuments(dateFilter),
+    AuditLog.aggregate([
+      { $match: dateFilter },
+      { $group: { _id: '$eventType', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]),
+    AuditLog.aggregate([
+      { $match: dateFilter },
+      { $group: { _id: '$severity', count: { $sum: 1 } } }
+    ]),
+    AuditLog.find(dateFilter)
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select('eventType severity createdAt description')
+      .lean()
+  ]);
+
+  return { totalLogs, eventTypeStats, severityStats, recentActivity };
+};
+
+export const getAuditLogById = async (id) => {
+  const log = await AuditLog.findById(id).populate('userId', 'firstName lastName email role').lean();
+  if (!log) return null;
+
+  if (log.metadata) {
+    delete log.metadata.password;
+    delete log.metadata.token;
+    delete log.metadata.secret;
+  }
+  return log;
+};
 /**
  * Create an audit log entry
  * @param {Object} params - Log parameters
@@ -327,23 +417,4 @@ export const logConfigUpdated = async (userId, updates) => {
     metadata: { updates },
     resourceType: 'CONFIG'
   });
-};
-
-export default {
-  createAuditLog,
-  logUserRegistration,
-  logLoginSuccess,
-  logLoginFailed,
-  logUserLogout,
-  logEmailVerified,
-  logPasswordReset,
-  logDonationCreated,
-  logDonationFailed,
-  logCauseCreated,
-  logCauseUpdated,
-  logCauseDeleted,
-  logCauseArchived,
-  logUserRoleChanged,
-  logAdminAction,
-  logConfigUpdated
 };

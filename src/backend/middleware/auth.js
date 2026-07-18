@@ -3,9 +3,9 @@ import User from '../models/User.js';
 
 export const protect = async (req, res, next) => {
   try {
-    let token;
+    let token = req.cookies?.token;
     
-    if (req.headers.authorization?.startsWith('Bearer')) {
+    if (!token && req.headers.authorization?.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
     }
 
@@ -32,15 +32,21 @@ export const protect = async (req, res, next) => {
 
       // Check for session timeout (30 minutes of inactivity)
       const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
-      if (user.lastActivity && (Date.now() - user.lastActivity.getTime() > INACTIVITY_TIMEOUT)) {
+      const now = Date.now();
+      
+      if (user.lastActivity && (now - user.lastActivity.getTime() > INACTIVITY_TIMEOUT)) {
         return res.status(401).json({ 
           message: 'Session expired due to inactivity. Please login again.' 
         });
       }
 
-      // Update last activity timestamp
-      user.lastActivity = Date.now();
-      await user.save();
+      // Throttle DB updates: only update lastActivity if it's been more than 5 minutes
+      const THROTTLE_WINDOW = 5 * 60 * 1000;
+      if (!user.lastActivity || (now - user.lastActivity.getTime() > THROTTLE_WINDOW)) {
+        user.lastActivity = now;
+        // Fire and forget - don't await this to keep API fast
+        user.save().catch(err => console.error('Failed to update last activity', err));
+      }
 
       req.user = user;
       req.token = token; // Store token for potential logout

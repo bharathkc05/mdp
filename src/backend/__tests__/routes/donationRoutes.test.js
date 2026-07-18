@@ -26,7 +26,7 @@ let adminToken;
 const mockLogDonationCreated = jest.fn();
 const mockLogDonationFailed = jest.fn();
 
-jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
+jest.unstable_mockModule('../../services/auditLogService.js', () => ({
   logDonationCreated: mockLogDonationCreated,
   logDonationFailed: mockLogDonationFailed
 }));

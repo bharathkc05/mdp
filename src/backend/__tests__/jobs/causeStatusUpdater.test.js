@@ -11,7 +11,7 @@ import Cause from '../../models/Cause.js';
 import { 
   startCauseStatusUpdater, 
   updateExpiredCauses 
-} from '../../utils/causeStatusUpdater.js';
+} from '../../jobs/causeStatusUpdater.js';
 
 let mongoServer;
 

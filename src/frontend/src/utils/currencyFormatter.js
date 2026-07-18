@@ -153,8 +153,13 @@ function formatNumberWithSeparators(num, decimalPlaces, thousandsSeparator, deci
   // Split into integer and decimal parts
   const [integerPart, decimalPart] = fixed.split('.');
   
-  // Add thousands separator
-  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSeparator);
+  // Apply Indian numbering format: last 3 digits, then every 2 digits
+  let formattedInteger = integerPart;
+  if (integerPart.length > 3) {
+    const lastThree = integerPart.substring(integerPart.length - 3);
+    const otherNumbers = integerPart.substring(0, integerPart.length - 3);
+    formattedInteger = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, thousandsSeparator) + thousandsSeparator + lastThree;
+  }
   
   // Combine with decimal part if needed
   if (decimalPlaces > 0 && decimalPart) {
